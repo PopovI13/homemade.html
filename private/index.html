@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Welcome to Illia's Projects</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Illia's Projects</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -11,14 +12,9 @@
       padding: 0 20px;
       background-color: #f0f4f8;
       color: #333;
-    }
-    header {
       text-align: center;
-      margin-bottom: 40px;
     }
-    h1 {
-      color: #007acc;
-    }
+
     nav a {
       display: inline-block;
       margin: 10px 15px;
@@ -29,34 +25,74 @@
       border-radius: 5px;
       font-weight: bold;
     }
+
     nav a:hover {
       background-color: #005fa3;
     }
+
     img {
-      display: block;
       max-width: 100%;
       margin: 30px auto;
       border-radius: 10px;
+      display: block;
+    }
+
+    /* Dark mode styles */
+    body.dark {
+      background-color: #222;
+      color: #eee;
+    }
+
+    body.dark nav a {
+      background-color: #444;
+      color: #eee;
+    }
+
+    body.dark nav a:hover {
+      background-color: #666;
+    }
+
+    body.dark img {
+      filter: brightness(0.8);
+    }
+
+    .theme-toggle {
+      margin: 30px 0;
     }
   </style>
 </head>
 <body>
+  <h1>Illia's Projects</h1>
+  <p>Check out my coding and electronics work.</p>
 
-<header>
-  <h1>Welcome to Illia's Web Projects</h1>
-  <p>Explore my coding and electronics work.</p>
-</header>
+  <nav>
+    <a href="t1a07-easyEDA-illia.html">EasyEDA Project</a>
+    <a href="t1a11-for-arrays-illia.html">Arrays & Loops</a>
+  </nav>
 
-<nav>
-  <a href="t1a07-easyEDA-illia.html">EasyEDA Project</a>
-  <a href="t1a11-for-arrays-illia.html">Arrays & Loops</a>
-</nav>
+  <img src="pcb.png" alt="Example PCB design" />
 
-<img src="pcb.png" alt="PCB Design Example" />
+  <div class="theme-toggle">
+    <input id="themeToggleBtn" type="button" value="🌚 Dark Mode" onclick="toggleTheme()" />
+  </div>
 
-<footer style="text-align:center; margin-top: 50px; color:#666;">
-  &copy; 2025 Illia. All rights reserved.
-</footer>
+  <footer style="color: #666; font-size: 0.9em;">
+    &copy; 2025 Illia. All rights reserved.
+  </footer>
 
+  <script>
+    function toggleTheme() {
+      const body = document.body;
+      const btn = document.getElementById('themeToggleBtn');
+      body.classList.toggle('dark');
+
+      if (body.classList.contains('dark')) {
+        btn.value = '☀️ Light Mode';
+      } else {
+        btn.value = '🌚 Dark Mode';
+      }
+    }
+  </script>
 </body>
 </html>
+
