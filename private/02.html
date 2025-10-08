@@ -1,245 +1,295 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
-<title> Star + Firework</title>
-<style>
-  html, body {
-    margin: 0; padding: 0; overflow: hidden;
-    background: #0d0d0d;
-    touch-action: manipulation;
-    -webkit-user-select: none; /* Disable text selection on mobile */
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
-    height: 100%;
-  }
-  canvas {
-    display: block;
-    position: fixed;
-    top: 0; left: 0;
-    width: 100vw;
-    height: 100vh;
-    background: #0d0d0d;
-    touch-action: manipulation;
-  }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Stars + Firework Explosions</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body, html {
+      height: 100%;
+      overflow: hidden;
+      background: #0d0d0d;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      color: #fff;
+      cursor: crosshair;
+    }
+    canvas {
+      display: block;
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+    }
+    h1 {
+      position: relative;
+      z-index: 1;
+      font-size: 3rem;
+      text-shadow: 0 0 10px rgba(255,255,255,0.6);
+      pointer-events: auto;
+      user-select: none;
+      max-width: 90vw;
+      text-align: center;
+      margin: 0 20px;
+      cursor: pointer;
+      transition: opacity 0.4s ease;
+    }
+    h1.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+  </style>
 </head>
 <body>
-<canvas id="canvas"></canvas>
+  <canvas id="canvas"></canvas>
+  <h1 id="explode-heading">Move your mouse! Click a star to starburst, click elsewhere for fireworks!</h1>
 
-<script>
-const canvas = document.getElementById('canvas');
-const ctx = canvas.getContext('2d');
+  <script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
 
-let width, height;
-function resize() {
-  width = window.innerWidth;
-  height = window.innerHeight;
-  canvas.width = width;
-  canvas.height = height;
-}
-window.addEventListener('resize', resize);
-resize();
-
-class Particle {
-  constructor(x, y) {
-    this.x = x ?? Math.random() * width;
-    this.y = y ?? Math.random() * height;
-    this.radius = 3 + Math.random() * 2; // slightly bigger for easier touch
-    this.color = `hsl(${Math.random() * 360}, 70%, 70%)`;
-    this.speedX = (Math.random() - 0.5) * 0.3; // slower movement
-    this.speedY = (Math.random() - 0.5) * 0.3;
-    this.opacity = 1;
-    this.isExploded = false;
-  }
-  draw() {
-    ctx.beginPath();
-    ctx.fillStyle = this.color;
-    ctx.shadowColor = this.color;
-    ctx.shadowBlur = 6;
-    ctx.globalAlpha = this.opacity;
-    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.globalAlpha = 1;
-  }
-  update() {
-    if (!this.isExploded) {
-      this.x += this.speedX;
-      this.y += this.speedY;
-      if (this.x < 0 || this.x > width) this.speedX *= -1;
-      if (this.y < 0 || this.y > height) this.speedY *= -1;
+    let width, height;
+    function resize() {
+      width = window.innerWidth;
+      height = window.innerHeight;
+      canvas.width = width;
+      canvas.height = height;
     }
-  }
-}
+    window.addEventListener('resize', resize);
+    resize();
 
-class StarburstParticle extends Particle {
-  constructor(x, y, angle) {
-    super(x, y);
-    this.radius = 2 + Math.random() * 1.5;
-    this.color = `hsl(${Math.random() * 360}, 100%, 85%)`;
-    const speed = 3 + Math.random() * 3;
-    this.speedX = Math.cos(angle) * speed;
-    this.speedY = Math.sin(angle) * speed;
-    this.friction = 0.92;
-    this.gravity = 0.04;
-    this.opacity = 1;
-    this.decay = 0.015 + Math.random() * 0.01;
-  }
-  update() {
-    this.speedX *= this.friction;
-    this.speedY *= this.friction;
-    this.speedY += this.gravity;
-    this.x += this.speedX;
-    this.y += this.speedY;
-    this.opacity -= this.decay;
-    if (this.opacity < 0) this.opacity = 0;
-  }
-}
-
-class FireworkParticle extends Particle {
-  constructor(x, y) {
-    super(x, y);
-    this.radius = 3 + Math.random() * 3;
-    this.color = `hsl(${Math.random() * 360}, 100%, 70%)`;
-    const angle = Math.random() * 2 * Math.PI;
-    const speed = 3 + Math.random() * 5;
-    this.speedX = Math.cos(angle) * speed;
-    this.speedY = Math.sin(angle) * speed;
-    this.friction = 0.95;
-    this.gravity = 0.07;
-    this.opacity = 1;
-    this.decay = 0.01 + Math.random() * 0.01;
-  }
-  update() {
-    this.speedX *= this.friction;
-    this.speedY *= this.friction;
-    this.speedY += this.gravity;
-    this.x += this.speedX;
-    this.y += this.speedY;
-    this.opacity -= this.decay;
-    if (this.opacity < 0) this.opacity = 0;
-  }
-}
-
-const particles = [];
-const PARTICLE_COUNT = 100; // reduced for mobile
-for (let i = 0; i < PARTICLE_COUNT; i++) {
-  particles.push(new Particle());
-}
-
-const starbursts = [];
-const fireworks = [];
-
-function connectParticles() {
-  const maxDist = 100;
-  for(let i=0; i<particles.length; i++){
-    for(let j=i+1; j<particles.length; j++){
-      const dx = particles[i].x - particles[j].x;
-      const dy = particles[i].y - particles[j].y;
-      const dist = Math.sqrt(dx*dx + dy*dy);
-      if(dist < maxDist){
-        ctx.strokeStyle = `rgba(255,255,255,${1 - dist / maxDist})`;
-        ctx.lineWidth = 1;
+    class Particle {
+      constructor(x, y, radius = null, color = null) {
+        this.x = x ?? Math.random() * width;
+        this.y = y ?? Math.random() * height;
+        this.radius = radius || (Math.random() * 3 + 1);
+        this.color = color || `hsl(${Math.random() * 360}, 70%, 60%)`;
+        this.speedX = (Math.random() - 0.5) * 0.5;
+        this.speedY = (Math.random() - 0.5) * 0.5;
+        this.opacity = 1;
+        this.isExploded = false;
+      }
+      draw() {
         ctx.beginPath();
-        ctx.moveTo(particles[i].x, particles[i].y);
-        ctx.lineTo(particles[j].x, particles[j].y);
-        ctx.stroke();
+        ctx.fillStyle = this.color;
+        ctx.shadowColor = this.color;
+        ctx.shadowBlur = 8;
+        ctx.globalAlpha = this.opacity;
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      }
+      update() {
+        if (!this.isExploded) {
+          this.x += this.speedX;
+          this.y += this.speedY;
+          if (this.x < 0 || this.x > width) this.speedX *= -1;
+          if (this.y < 0 || this.y > height) this.speedY *= -1;
+        }
       }
     }
-  }
-}
 
-function triggerStarburst(particle, index) {
-  particle.isExploded = true;
-  const rays = 15;
-  const burst = [];
-  for(let i=0; i<rays; i++){
-    const angle = (i / rays) * 2 * Math.PI;
-    burst.push(new StarburstParticle(particle.x, particle.y, angle));
-  }
-  starbursts.push(burst);
-  setTimeout(() => {
-    particles.splice(index,1);
-  }, 300);
-}
-
-function createFirework(x,y){
-  const count = 30;
-  const fw = [];
-  for(let i=0; i<count; i++){
-    fw.push(new FireworkParticle(x,y));
-  }
-  fireworks.push(fw);
-}
-
-function handleInteraction(x,y){
-  const clickRadius = 25; // easier to tap on mobile
-  let hitStar = false;
-  for(let i=0; i<particles.length; i++){
-    const p = particles[i];
-    if(p.isExploded) continue;
-    const dx = p.x - x;
-    const dy = p.y - y;
-    if(Math.sqrt(dx*dx + dy*dy) < clickRadius){
-      triggerStarburst(p, i);
-      hitStar = true;
-      break;
+    class StarburstParticle extends Particle {
+      constructor(x, y, angle) {
+        const radius = Math.random() * 2 + 1.5;
+        const color = `hsl(${Math.random() * 360}, 100%, 85%)`;
+        super(x, y, radius, color);
+        const speed = Math.random() * 6 + 3;
+        this.speedX = Math.cos(angle) * speed;
+        this.speedY = Math.sin(angle) * speed;
+        this.friction = 0.92;
+        this.gravity = 0.05;
+        this.opacity = 1;
+        this.decay = Math.random() * 0.02 + 0.015;
+      }
+      update() {
+        this.speedX *= this.friction;
+        this.speedY *= this.friction;
+        this.speedY += this.gravity;
+        this.x += this.speedX;
+        this.y += this.speedY;
+        this.opacity -= this.decay;
+        if (this.opacity < 0) this.opacity = 0;
+      }
     }
-  }
-  if(!hitStar){
-    createFirework(x,y);
-  }
-}
 
-canvas.addEventListener('click', e => {
-  handleInteraction(e.clientX, e.clientY);
-});
-canvas.addEventListener('touchstart', e => {
-  e.preventDefault(); // prevent scrolling on touch
-  const touch = e.touches[0];
-  handleInteraction(touch.clientX, touch.clientY);
-}, {passive: false});
+    class FireworkParticle extends Particle {
+      constructor(x, y, big = false) {
+        const radius = Math.random() * (big ? 6 : 4) + 2;
+        const color = `hsl(${Math.random() * 360}, 100%, 70%)`;
+        super(x, y, radius, color);
+        const angle = Math.random() * 2 * Math.PI;
+        const speed = Math.random() * (big ? 10 : 7) + (big ? 4 : 3);
+        this.speedX = Math.cos(angle) * speed;
+        this.speedY = Math.sin(angle) * speed;
+        this.friction = 0.93;
+        this.gravity = 0.1;
+        this.opacity = 1;
+        this.decay = Math.random() * 0.015 + 0.01;
+      }
+      update() {
+        this.speedX *= this.friction;
+        this.speedY *= this.friction;
+        this.speedY += this.gravity;
+        this.x += this.speedX;
+        this.y += this.speedY;
+        this.opacity -= this.decay;
+        if (this.opacity < 0) this.opacity = 0;
+      }
+    }
 
-function animate(){
-  ctx.clearRect(0,0,width,height);
+    const particles = [];
+    const starbursts = [];
+    const fireworks = [];
+    const PARTICLE_COUNT = 150;
 
-  particles.forEach(p => {
-    p.update();
-    p.draw();
-  });
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      particles.push(new Particle());
+    }
 
-  connectParticles();
+    let mouse = { x: null, y: null };
 
-  // Animate starbursts
-  for(let i=starbursts.length-1; i>=0; i--){
-    const burst = starbursts[i];
-    let faded = true;
-    burst.forEach(p => {
-      p.update();
-      p.draw();
-      if(p.opacity > 0) faded = false;
+    window.addEventListener('mousemove', e => {
+      mouse.x = e.clientX;
+      mouse.y = e.clientY;
     });
-    if(faded) starbursts.splice(i,1);
-  }
 
-  // Animate fireworks
-  for(let i=fireworks.length-1; i>=0; i--){
-    const fw = fireworks[i];
-    let faded = true;
-    fw.forEach(p => {
-      p.update();
-      p.draw();
-      if(p.opacity > 0) faded = false;
+    window.addEventListener('click', e => {
+      const clickX = e.clientX;
+      const clickY = e.clientY;
+      const threshold = 15;
+
+      let explodedStar = false;
+      for (let i = 0; i < particles.length; i++) {
+        const p = particles[i];
+        if (p.isExploded) continue;
+        const dx = p.x - clickX;
+        const dy = p.y - clickY;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < threshold) {
+          triggerStarburst(p, i);
+          explodedStar = true;
+          break;
+        }
+      }
+      if (!explodedStar) {
+        createFirework(clickX, clickY);
+      }
     });
-    if(faded) fireworks.splice(i,1);
-  }
 
-  requestAnimationFrame(animate);
-}
+    function triggerStarburst(particle, index) {
+      particle.isExploded = true;
+      const raysCount = 20;
+      const starburstParticles = [];
+      for (let i = 0; i < raysCount; i++) {
+        const angle = (i / raysCount) * Math.PI * 2;
+        starburstParticles.push(new StarburstParticle(particle.x, particle.y, angle));
+      }
+      starbursts.push(starburstParticles);
+      setTimeout(() => {
+        particles.splice(index, 1);
+      }, 300);
+    }
 
-animate();
-</script>
+    function createFirework(x, y, big = false) {
+      const count = big ? 100 : 40;
+      const fireworkParticles = [];
+      for (let i = 0; i < count; i++) {
+        fireworkParticles.push(new FireworkParticle(x, y, big));
+      }
+      fireworks.push(fireworkParticles);
+    }
+
+    function connectParticles() {
+      const maxDistance = 100;
+      for (let i = 0; i < particles.length; i++) {
+        for (let j = i + 1; j < particles.length; j++) {
+          const dx = particles[i].x - particles[j].x;
+          const dy = particles[i].y - particles[j].y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < maxDistance) {
+            ctx.strokeStyle = `rgba(255, 255, 255, ${1 - dist / maxDistance})`;
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(particles[i].x, particles[i].y);
+            ctx.lineTo(particles[j].x, particles[j].y);
+            ctx.stroke();
+          }
+        }
+      }
+    }
+
+    function animate() {
+      ctx.clearRect(0, 0, width, height);
+
+      particles.forEach(p => {
+        p.update();
+        if (mouse.x !== null && mouse.y !== null) {
+          const dx = p.x - mouse.x;
+          const dy = p.y - mouse.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < 100) {
+            const angle = Math.atan2(dy, dx);
+            const repelForce = (100 - dist) / 20;
+            p.x += Math.cos(angle) * repelForce;
+            p.y += Math.sin(angle) * repelForce;
+          }
+        }
+        p.draw();
+      });
+
+      connectParticles();
+
+      for (let i = starbursts.length - 1; i >= 0; i--) {
+        const burst = starbursts[i];
+        let allFaded = true;
+        burst.forEach(p => {
+          p.update();
+          p.draw();
+          if (p.opacity > 0) allFaded = false;
+        });
+        if (allFaded) starbursts.splice(i, 1);
+      }
+
+      for (let i = fireworks.length - 1; i >= 0; i--) {
+        const firework = fireworks[i];
+        let allFaded = true;
+        firework.forEach(p => {
+          p.update();
+          p.draw();
+          if (p.opacity > 0) allFaded = false;
+        });
+        if (allFaded) fireworks.splice(i, 1);
+      }
+
+      requestAnimationFrame(animate);
+    }
+
+    animate();
+
+    // Explosion on text disappear
+    document.addEventListener('DOMContentLoaded', () => {
+      const heading = document.getElementById('explode-heading');
+
+      heading.addEventListener('click', () => {
+        heading.classList.add('hidden');
+
+        const rect = heading.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+
+        // Big boom 💥
+        createFirework(centerX, centerY, true);
+      });
+    });
+  </script>
 </body>
 </html>
