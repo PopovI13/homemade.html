@@ -7,7 +7,11 @@ export default function RecipeFinder() {
   const [error, setError] = useState(null);
 
   const fetchRecipes = async () => {
-    if (!ingredients.trim()) return;
+    if (!ingredients.trim()) {
+      setError("Пожалуйста, введите ингредиенты");
+      setRecipes([]);
+      return;
+    }
 
     setLoading(true);
     setError(null);
@@ -20,13 +24,19 @@ export default function RecipeFinder() {
       );
 
       if (!response.ok) {
-        throw new Error("Ошибка при запросе рецептов");
+        throw new Error(`Ошибка HTTP: ${response.status}`);
       }
 
       const data = await response.json();
-      setRecipes(data);
+
+      if (data.length === 0) {
+        setError("Рецепты не найдены");
+        setRecipes([]);
+      } else {
+        setRecipes(data);
+      }
     } catch (err) {
-      setError(err.message);
+      setError(`Ошибка: ${err.message}`);
       setRecipes([]);
     } finally {
       setLoading(false);
@@ -34,25 +44,42 @@ export default function RecipeFinder() {
   };
 
   return (
-    <div style={{ maxWidth: 600, margin: "auto", padding: 20, fontFamily: "Arial" }}>
+    <div style={{ maxWidth: 600, margin: "auto", padding: 20, fontFamily: "Arial, sans-serif" }}>
       <h2>Рецепты из ингредиентов</h2>
       <input
         type="text"
-        placeholder="Введите ингредиенты через запятую"
+        placeholder="Введите ингредиенты через запятую (например: картофель, лук, яйца)"
         value={ingredients}
         onChange={(e) => setIngredients(e.target.value)}
-        style={{ width: "100%", padding: 10, fontSize: 16 }}
+        style={{
+          width: "100%",
+          padding: 10,
+          fontSize: 16,
+          borderRadius: 4,
+          border: "1px solid #ccc",
+          boxSizing: "border-box",
+        }}
       />
-      <button onClick={fetchRecipes} style={{ marginTop: 10, padding: "10px 20px", fontSize: 16 }}>
+      <button
+        onClick={fetchRecipes}
+        style={{
+          marginTop: 10,
+          padding: "10px 20px",
+          fontSize: 16,
+          cursor: "pointer",
+          borderRadius: 4,
+          border: "none",
+          backgroundColor: "#28a745",
+          color: "white",
+        }}
+      >
         Найти рецепты
       </button>
 
-      {loading && <p>Загрузка...</p>}
-      {error && <p style={{ color: "red" }}>{error}</p>}
+      {loading && <p style={{ marginTop: 20 }}>Загрузка...</p>}
+      {error && <p style={{ marginTop: 20, color: "red" }}>{error}</p>}
 
       <div style={{ marginTop: 20 }}>
-        {recipes.length === 0 && !loading && <p>Рецепты не найдены</p>}
-
         {recipes.map((recipe) => (
           <div
             key={recipe.id}
@@ -73,14 +100,18 @@ export default function RecipeFinder() {
             />
             <div>
               <h3 style={{ margin: 0 }}>{recipe.title}</h3>
-              <p>
-                Использованные ингредиенты:{" "}
-                {recipe.usedIngredientCount} / {recipe.usedIngredientCount + recipe.missedIngredientCount}
+              <p style={{ margin: "5px 0" }}>
+                Использовано ингредиентов: {recipe.usedIngredientCount} из{" "}
+                {recipe.usedIngredientCount + recipe.missedIngredientCount}
               </p>
             </div>
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
     </div>
   );
 }
