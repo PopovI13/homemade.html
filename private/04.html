@@ -1,117 +1,87 @@
-import React, { useState } from "react";
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>Лучшие рецепты</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 30px auto;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+    }
+    .recipes {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      justify-content: center;
+    }
+    .recipe-card {
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      width: 200px;
+      padding: 10px;
+      box-shadow: 1px 1px 5px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+    .recipe-card img {
+      width: 100%;
+      border-radius: 6px;
+    }
+    .recipe-title {
+      margin-top: 10px;
+      font-weight: bold;
+      font-size: 16px;
+      min-height: 48px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Популярные рецепты</h1>
+  <div id="recipes" class="recipes">Загрузка...</div>
 
-export default function RecipeFinder() {
-  const [ingredients, setIngredients] = useState("");
-  const [recipes, setRecipes] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  <script>
+    const API_KEY = "YOUR_API_KEY_HERE"; // Вставьте сюда ваш Spoonacular API ключ
+    const recipesContainer = document.getElementById("recipes");
 
-  const fetchRecipes = async () => {
-    if (!ingredients.trim()) {
-      setError("Пожалуйста, введите ингредиенты");
-      setRecipes([]);
-      return;
+    async function fetchRecipes() {
+      try {
+        const response = await fetch(`https://api.spoonacular.com/recipes/random?number=10&apiKey=${API_KEY}`);
+        if (!response.ok) {
+          recipesContainer.textContent = "Ошибка при загрузке рецептов";
+          return;
+        }
+        const data = await response.json();
+        const recipes = data.recipes;
+
+        recipesContainer.innerHTML = "";
+
+        recipes.forEach(recipe => {
+          const card = document.createElement("div");
+          card.className = "recipe-card";
+
+          const img = document.createElement("img");
+          img.src = recipe.image;
+          img.alt = recipe.title;
+
+          const title = document.createElement("div");
+          title.className = "recipe-title";
+          title.textContent = recipe.title;
+
+          card.appendChild(img);
+          card.appendChild(title);
+
+          recipesContainer.appendChild(card);
+        });
+      } catch (error) {
+        recipesContainer.textContent = "Ошибка сети или API";
+      }
     }
 
-    setLoading(true);
-    setError(null);
-
-    try {
-      const response = await fetch(
-        `https://api.spoonacular.com/recipes/findByIngredients?ingredients=${encodeURIComponent(
-          ingredients
-        )}&number=10&apiKey=YOUR_API_KEY_HERE`
-      );
-
-      if (!response.ok) {
-        throw new Error(`Ошибка HTTP: ${response.status}`);
-      }
-
-      const data = await response.json();
-
-      if (data.length === 0) {
-        setError("Рецепты не найдены");
-        setRecipes([]);
-      } else {
-        setRecipes(data);
-      }
-    } catch (err) {
-      setError(`Ошибка: ${err.message}`);
-      setRecipes([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div style={{ maxWidth: 600, margin: "auto", padding: 20, fontFamily: "Arial, sans-serif" }}>
-      <h2>Рецепты из ингредиентов</h2>
-      <input
-        type="text"
-        placeholder="Введите ингредиенты через запятую (например: картофель, лук, яйца)"
-        value={ingredients}
-        onChange={(e) => setIngredients(e.target.value)}
-        style={{
-          width: "100%",
-          padding: 10,
-          fontSize: 16,
-          borderRadius: 4,
-          border: "1px solid #ccc",
-          boxSizing: "border-box",
-        }}
-      />
-      <button
-        onClick={fetchRecipes}
-        style={{
-          marginTop: 10,
-          padding: "10px 20px",
-          fontSize: 16,
-          cursor: "pointer",
-          borderRadius: 4,
-          border: "none",
-          backgroundColor: "#28a745",
-          color: "white",
-        }}
-      >
-        Найти рецепты
-      </button>
-
-      {loading && <p style={{ marginTop: 20 }}>Загрузка...</p>}
-      {error && <p style={{ marginTop: 20, color: "red" }}>{error}</p>}
-
-      <div style={{ marginTop: 20 }}>
-        {recipes.map((recipe) => (
-          <div
-            key={recipe.id}
-            style={{
-              border: "1px solid #ddd",
-              borderRadius: 8,
-              padding: 10,
-              marginBottom: 15,
-              display: "flex",
-              alignItems: "center",
-              gap: 15,
-            }}
-          >
-            <img
-              src={recipe.image}
-              alt={recipe.title}
-              style={{ width: 80, height: 80, objectFit: "cover", borderRadius: 8 }}
-            />
-            <div>
-              <h3 style={{ margin: 0 }}>{recipe.title}</h3>
-              <p style={{ margin: "5px 0" }}>
-                Использовано ингредиентов: {recipe.usedIngredientCount} из{" "}
-                {recipe.usedIngredientCount + recipe.missedIngredientCount}
-              </p>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-    </div>
-  );
-}
+    fetchRecipes();
+  </script>
+</body>
+</html>
