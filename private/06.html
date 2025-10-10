@@ -1,148 +1,158 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Simple Saber Duel</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <title>Star Sword Playground</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body {
       margin: 0;
-      background: #000;
+      background: radial-gradient(#000000, #111111);
       color: #fff;
-      font-family: Arial, sans-serif;
-      overflow: hidden;
+      font-family: 'Arial', sans-serif;
       text-align: center;
+      padding: 2rem;
     }
 
     h1 {
       color: #FFE81F;
-      margin: 1rem 0;
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
     }
 
-    #arena {
-      position: relative;
-      width: 100%;
-      height: 400px;
-      background: radial-gradient(circle at center, #111 30%, #000 100%);
-      border-top: 2px solid #333;
-      border-bottom: 2px solid #333;
-      overflow: hidden;
+    .playground {
+      display: flex;
+      justify-content: center;
+      gap: 3rem;
+      flex-wrap: wrap;
+      margin-top: 2rem;
+    }
+
+    .saber-box {
+      background: #1a1a1a;
+      border-radius: 10px;
+      padding: 1rem;
+      width: 180px;
+      box-shadow: 0 0 15px #000;
     }
 
     .saber {
-      position: absolute;
-      bottom: 20px;
-      width: 10px;
-      height: 150px;
-      background: gray;
-      transition: left 0.1s;
+      position: relative;
+      width: 20px;
+      height: 140px;
+      margin: 0 auto 1rem;
+      background: #333;
+      border-radius: 4px;
     }
 
     .blade {
       position: absolute;
       bottom: 100%;
       left: 50%;
-      width: 4px;
-      height: 120px;
       transform: translateX(-50%);
-      box-shadow: 0 0 10px;
-      border-radius: 2px;
+      width: 8px;
+      height: 0;
+      background: white;
+      border-radius: 4px;
+      box-shadow: none;
+      transition: height 0.4s ease, box-shadow 0.3s ease;
     }
 
-    .blue .blade {
-      background: deepskyblue;
-      box-shadow: 0 0 15px deepskyblue;
-    }
-
-    .red .blade {
+    .blade.red.on {
+      height: 140px;
       background: red;
-      box-shadow: 0 0 15px red;
+      box-shadow: 0 0 25px red;
     }
 
-    .clash {
-      position: absolute;
-      top: 150px;
-      width: 30px;
-      height: 30px;
-      background: yellow;
-      border-radius: 50%;
-      box-shadow: 0 0 20px yellow;
-      display: none;
-      z-index: 10;
+    .blade.green.on {
+      height: 140px;
+      background: lime;
+      box-shadow: 0 0 25px lime;
+    }
+
+    .blade.blue.on {
+      height: 140px;
+      background: deepskyblue;
+      box-shadow: 0 0 25px deepskyblue;
+    }
+
+    button {
+      background: #333;
+      color: #fff;
+      border: 1px solid #666;
+      padding: 0.5rem 1rem;
+      margin: 0.3rem;
+      cursor: pointer;
+      border-radius: 5px;
+      transition: background 0.3s;
+    }
+
+    button:hover {
+      background: #555;
     }
 
     footer {
+      margin-top: 3rem;
       color: #aaa;
       font-size: 0.9rem;
-      margin-top: 1rem;
     }
   </style>
 </head>
 <body>
 
-  <h1>⚔️ Simple Star Sword Duel ⚔️</h1>
-  <p>Player 1: A / D &nbsp;&nbsp;|&nbsp;&nbsp; Player 2: ← / →</p>
+  <h1>🛡️ Star Sword Playground</h1>
+  <p>Use the controls below to ignite your sabers!</p>
 
-  <div id="arena">
-    <div class="saber blue" id="blueSaber" style="left: 100px;">
-      <div class="blade"></div>
+  <div class="playground">
+    <!-- Blue Saber -->
+    <div class="saber-box">
+      <div class="saber">
+        <div class="blade blue" id="blueBlade"></div>
+      </div>
+      <p>🔷 Blue Saber</p>
+      <button onclick="toggleSaber('blue', true)">Turn On</button>
+      <button onclick="toggleSaber('blue', false)">Turn Off</button>
     </div>
-    <div class="saber red" id="redSaber" style="left: 600px;">
-      <div class="blade"></div>
+
+    <!-- Green Saber -->
+    <div class="saber-box">
+      <div class="saber">
+        <div class="blade green" id="greenBlade"></div>
+      </div>
+      <p>🟢 Green Saber</p>
+      <button onclick="toggleSaber('green', true)">Turn On</button>
+      <button onclick="toggleSaber('green', false)">Turn Off</button>
     </div>
-    <div class="clash" id="clashEffect"></div>
+
+    <!-- Red Saber -->
+    <div class="saber-box">
+      <div class="saber">
+        <div class="blade red" id="redBlade"></div>
+      </div>
+      <p>🔴 Red Saber</p>
+      <button onclick="toggleSaber('red', true)">Turn On</button>
+      <button onclick="toggleSaber('red', false)">Turn Off</button>
+    </div>
   </div>
 
-  <footer>May the button-mashing be with you</footer>
+  <footer>Made with midichlorians. May the buttons be with you ⚔️</footer>
 
-  <audio id="clashSound" src="https://www.soundjay.com/mechanical/sounds/sword-clash-1.mp3" preload="auto"></audio>
+  <!-- Sound Effect -->
+  <audio id="saberSound" src="https://www.soundjay.com/button/sounds/button-10.mp3" preload="auto"></audio>
 
   <script>
-    const blue = document.getElementById('blueSaber');
-    const red = document.getElementById('redSaber');
-    const clash = document.getElementById('clashEffect');
-    const clashSound = document.getElementById('clashSound');
-
-    let bluePos = 100;
-    let redPos = 600;
-    const moveSpeed = 10;
-
-    function updatePositions() {
-      blue.style.left = bluePos + 'px';
-      red.style.left = redPos + 'px';
-
-      // Check for clash
-      if (Math.abs(bluePos - redPos) < 20) {
-        clash.style.left = ((bluePos + redPos) / 2 - 15) + 'px';
-        clash.style.display = 'block';
-        clashSound.currentTime = 0;
-        clashSound.play();
-        setTimeout(() => clash.style.display = 'none', 200);
+    function toggleSaber(color, turnOn) {
+      const blade = document.getElementById(color + 'Blade');
+      const sound = document.getElementById('saberSound');
+      
+      if (turnOn) {
+        blade.classList.add('on');
+        sound.currentTime = 0;
+        sound.play();
+      } else {
+        blade.classList.remove('on');
       }
     }
-
-    document.addEventListener('keydown', (e) => {
-      switch (e.key) {
-        case 'a':
-        case 'A':
-          bluePos = Math.max(0, bluePos - moveSpeed);
-          break;
-        case 'd':
-        case 'D':
-          bluePos = Math.min(window.innerWidth - 20, bluePos + moveSpeed);
-          break;
-        case 'ArrowLeft':
-          redPos = Math.max(0, redPos - moveSpeed);
-          break;
-        case 'ArrowRight':
-          redPos = Math.min(window.innerWidth - 20, redPos + moveSpeed);
-          break;
-      }
-      updatePositions();
-    });
-
-    // Initialize
-    updatePositions();
   </script>
 
 </body>
