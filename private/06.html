@@ -7,39 +7,42 @@
   <style>
     body {
       margin: 0;
-      background: radial-gradient(circle at center, #000 20%, #111 100%);
-      color: white;
-      font-family: Arial, sans-serif;
+      background: radial-gradient(#000000, #111111);
+      color: #fff;
+      font-family: 'Arial', sans-serif;
       text-align: center;
       padding: 2rem;
     }
 
     h1 {
+      color: #FFE81F;
       font-size: 2.5rem;
       margin-bottom: 1rem;
-      color: #FFE81F;
     }
 
-    .saber-container {
+    .playground {
       display: flex;
       justify-content: center;
-      gap: 2rem;
-      margin-top: 3rem;
+      gap: 3rem;
       flex-wrap: wrap;
+      margin-top: 2rem;
+    }
+
+    .saber-box {
+      background: #1a1a1a;
+      border-radius: 10px;
+      padding: 1rem;
+      width: 180px;
+      box-shadow: 0 0 15px #000;
     }
 
     .saber {
       position: relative;
       width: 20px;
-      height: 150px;
+      height: 140px;
+      margin: 0 auto 1rem;
       background: #333;
       border-radius: 4px;
-      cursor: pointer;
-      transition: transform 0.2s;
-    }
-
-    .saber:hover {
-      transform: scale(1.1);
     }
 
     .blade {
@@ -50,72 +53,106 @@
       width: 8px;
       height: 0;
       background: white;
-      box-shadow: 0 0 8px white;
       border-radius: 4px;
-      transition: height 0.4s ease, background 0.3s, box-shadow 0.3s;
+      box-shadow: none;
+      transition: height 0.4s ease, box-shadow 0.3s ease;
     }
 
-    .saber.active .blade.red {
-      height: 150px;
+    .blade.red.on {
+      height: 140px;
       background: red;
-      box-shadow: 0 0 20px red;
+      box-shadow: 0 0 25px red;
     }
 
-    .saber.active .blade.green {
-      height: 150px;
+    .blade.green.on {
+      height: 140px;
       background: lime;
-      box-shadow: 0 0 20px lime;
+      box-shadow: 0 0 25px lime;
     }
 
-    .saber.active .blade.blue {
-      height: 150px;
+    .blade.blue.on {
+      height: 140px;
       background: deepskyblue;
-      box-shadow: 0 0 20px deepskyblue;
+      box-shadow: 0 0 25px deepskyblue;
+    }
+
+    button {
+      background: #333;
+      color: #fff;
+      border: 1px solid #666;
+      padding: 0.5rem 1rem;
+      margin: 0.3rem;
+      cursor: pointer;
+      border-radius: 5px;
+      transition: background 0.3s;
+    }
+
+    button:hover {
+      background: #555;
     }
 
     footer {
       margin-top: 3rem;
+      color: #aaa;
       font-size: 0.9rem;
-      color: #999;
     }
   </style>
 </head>
 <body>
 
-  <h1>🔦 Star Sword Playground</h1>
-  <p>Click a hilt to ignite your blade. Play with the Force!</p>
+  <h1>🛡️ Star Sword Playground</h1>
+  <p>Use the controls below to ignite your sabers!</p>
 
-  <div class="saber-container">
-    <div class="saber" id="blueSaber">
-      <div class="blade blue"></div>
+  <div class="playground">
+    <!-- Blue Saber -->
+    <div class="saber-box">
+      <div class="saber">
+        <div class="blade blue" id="blueBlade"></div>
+      </div>
+      <p>🔷 Blue Saber</p>
+      <button onclick="toggleSaber('blue', true)">Turn On</button>
+      <button onclick="toggleSaber('blue', false)">Turn Off</button>
     </div>
-    <div class="saber" id="greenSaber">
-      <div class="blade green"></div>
+
+    <!-- Green Saber -->
+    <div class="saber-box">
+      <div class="saber">
+        <div class="blade green" id="greenBlade"></div>
+      </div>
+      <p>🟢 Green Saber</p>
+      <button onclick="toggleSaber('green', true)">Turn On</button>
+      <button onclick="toggleSaber('green', false)">Turn Off</button>
     </div>
-    <div class="saber" id="redSaber">
-      <div class="blade red"></div>
+
+    <!-- Red Saber -->
+    <div class="saber-box">
+      <div class="saber">
+        <div class="blade red" id="redBlade"></div>
+      </div>
+      <p>🔴 Red Saber</p>
+      <button onclick="toggleSaber('red', true)">Turn On</button>
+      <button onclick="toggleSaber('red', false)">Turn Off</button>
     </div>
   </div>
 
-  <footer>May the click be with you ✨</footer>
+  <footer>Made with midichlorians. May the buttons be with you ⚔️</footer>
 
-  <!-- Lightsaber Sound -->
+  <!-- Sound Effect -->
   <audio id="saberSound" src="https://www.soundjay.com/button/sounds/button-10.mp3" preload="auto"></audio>
 
   <script>
-    const sabers = document.querySelectorAll('.saber');
-    const sound = document.getElementById('saberSound');
-
-    sabers.forEach(saber => {
-      saber.addEventListener('click', () => {
-        saber.classList.toggle('active');
-        // Play sound only when turning on
-        if (saber.classList.contains('active')) {
-          sound.currentTime = 0;
-          sound.play();
-        }
-      });
-    });
+    function toggleSaber(color, turnOn) {
+      const blade = document.getElementById(color + 'Blade');
+      const sound = document.getElementById('saberSound');
+      
+      if (turnOn) {
+        blade.classList.add('on');
+        sound.currentTime = 0;
+        sound.play();
+      } else {
+        blade.classList.remove('on');
+      }
+    }
   </script>
 
 </body>
