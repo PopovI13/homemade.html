@@ -1,1 +1,220 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Fun CSS Car Race Game</title>
+<style>
+  body {
+    margin: 0;
+    background: linear-gradient(to bottom, #222, #111);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: #0af;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 100vh;
+    user-select: none;
+    overflow-x: hidden;
+  }
+
+  h1 {
+    margin: 20px 0 10px;
+    text-shadow: 0 0 10px #0af;
+  }
+
+  .track {
+    position: relative;
+    background: #333;
+    width: 90vw;
+    max-width: 900px;
+    height: 180px;
+    border-radius: 12px;
+    border: 4px solid #0af;
+    box-shadow: 0 0 20px #0af inset;
+    margin-top: 20px;
+  }
+
+  .lane {
+    position: absolute;
+    width: 100%;
+    height: 70px;
+    border-bottom: 2px dashed #0af;
+  }
+
+  .lane1 {
+    top: 20px;
+  }
+
+  .lane2 {
+    bottom: 20px;
+  }
+
+  .car {
+    position: absolute;
+    width: 80px;
+    height: 40px;
+    border-radius: 10px;
+    top: 0;
+    left: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px;
+    box-sizing: border-box;
+  }
+
+  /* Car body shapes */
+  .car-body {
+    flex: 1;
+    background: currentColor;
+    border-radius: 8px;
+    position: relative;
+  }
+
+  /* Wheels: circles */
+  .wheel {
+    width: 20px;
+    height: 20px;
+    background: #222;
+    border-radius: 50%;
+    box-shadow: inset 0 0 5px #000;
+  }
+
+  .car1 {
+    color: #0af; /* bright blue */
+    top: 25px;
+  }
+
+  .car2 {
+    color: #fa0; /* bright orange */
+    top: 115px;
+  }
+
+  /* Finish line */
+  .finish-line {
+    position: absolute;
+    top: 0;
+    right: 40px;
+    width: 8px;
+    height: 100%;
+    background: repeating-linear-gradient(
+      45deg,
+      white,
+      white 10px,
+      black 10px,
+      black 20px
+    );
+    box-shadow: 0 0 10px white;
+  }
+
+  #status {
+    margin-top: 30px;
+    font-size: 1.3rem;
+    min-height: 1.5em;
+  }
+
+</style>
+</head>
+<body>
+
+<h1>Fun CSS Car Race Game</h1>
+
+<div class="track" id="track">
+  <div class="lane lane1"></div>
+  <div class="lane lane2"></div>
+
+  <div class="car car1" id="playerCar" style="left:0;">
+    <div class="wheel"></div>
+    <div class="car-body"></div>
+    <div class="wheel"></div>
+  </div>
+
+  <div class="car car2" id="cpuCar" style="left:0;">
+    <div class="wheel"></div>
+    <div class="car-body"></div>
+    <div class="wheel"></div>
+  </div>
+
+  <div class="finish-line"></div>
+</div>
+
+<div id="status">Use LEFT/RIGHT arrows to move your blue car. Reach the finish line first!</div>
+
+<script>
+  const playerCar = document.getElementById('playerCar');
+  const cpuCar = document.getElementById('cpuCar');
+  const track = document.getElementById('track');
+  const status = document.getElementById('status');
+
+  const trackWidth = track.clientWidth;
+  const finishLineX = trackWidth - 120; // approx finish line position (40px + 80 car width)
+
+  let playerPos = 0;
+  let cpuPos = 0;
+  let raceOver = false;
+
+  // CPU car speed and movement
+  function cpuMove() {
+    if (raceOver) return;
+    // Random speed 2 to 5 px per tick
+    const speed = 2 + Math.random() * 3;
+    cpuPos += speed;
+    if (cpuPos > finishLineX) cpuPos = finishLineX;
+    cpuCar.style.left = cpuPos + 'px';
+
+    checkWinner();
+  }
+
+  // Check if someone won
+  function checkWinner() {
+    if (raceOver) return;
+    if (playerPos >= finishLineX && cpuPos >= finishLineX) {
+      raceOver = true;
+      status.textContent = "It's a tie! 🎉";
+    } else if (playerPos >= finishLineX) {
+      raceOver = true;
+      status.textContent = "You win! 🚗💨";
+    } else if (cpuPos >= finishLineX) {
+      raceOver = true;
+      status.textContent = "CPU wins! Try again!";
+    }
+  }
+
+  // Listen for arrow keys to move player car
+  window.addEventListener('keydown', (e) => {
+    if (raceOver) return;
+    if (e.key === 'ArrowRight') {
+      playerPos += 10;
+      if (playerPos > finishLineX) playerPos = finishLineX;
+      playerCar.style.left = playerPos + 'px';
+      checkWinner();
+    }
+    else if (e.key === 'ArrowLeft') {
+      playerPos -= 10;
+      if (playerPos < 0) playerPos = 0;
+      playerCar.style.left = playerPos + 'px';
+    }
+  });
+
+  // CPU car keeps moving every 200ms
+  setInterval(() => {
+    cpuMove();
+  }, 200);
+
+  // Reset the game every 10 seconds
+  setInterval(() => {
+    if (raceOver) {
+      raceOver = false;
+      playerPos = 0;
+      cpuPos = 0;
+      playerCar.style.left = '0px';
+      cpuCar.style.left = '0px';
+      status.textContent = "Use LEFT/RIGHT arrows to move your blue car. Reach the finish line first!";
+    }
+  }, 10000);
+</script>
+
+</body>
+</html>
