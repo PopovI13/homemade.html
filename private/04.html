@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Simple Fast & Furious Race</title>
+<title>Fast & Furious: Simple Race</title>
 <style>
   body {
     background: linear-gradient(90deg, #121212, #1f1f1f);
@@ -52,10 +52,8 @@
 
   .car {
     position: absolute;
-    width: 100px;
-    height: 50px;
-    background-size: contain;
-    background-repeat: no-repeat;
+    width: 120px;
+    height: auto;
     top: 10px;
     left: 0;
     filter: drop-shadow(0 0 10px #00bfff);
@@ -63,12 +61,10 @@
   }
 
   .car1 {
-    background-image: url('https://cdn-icons-png.flaticon.com/512/743/743922.png'); /* blue car */
     top: 20px;
   }
 
   .car2 {
-    background-image: url('https://cdn-icons-png.flaticon.com/512/743/743924.png'); /* red car */
     bottom: 20px;
   }
 
@@ -99,8 +95,8 @@
   <div class="race-track">
     <div class="lane lane1"></div>
     <div class="lane lane2"></div>
-    <div class="car car1" id="car1"></div>
-    <div class="car car2" id="car2"></div>
+    <img src="https://i.ibb.co/RzC3kjK/blue-car.png" alt="Blue Car" class="car car1" id="car1" />
+    <img src="https://i.ibb.co/0sVrQmr/red-car.png" alt="Red Car" class="car car2" id="car2" />
   </div>
 
   <button id="startBtn">Start Race!</button>
@@ -110,7 +106,7 @@
     const car2 = document.getElementById('car2');
     const startBtn = document.getElementById('startBtn');
     const raceTrackWidth = document.querySelector('.race-track').offsetWidth;
-    const carWidth = 100;
+    const carWidth = 120;
 
     let raceInterval;
     let pos1 = 0;
@@ -170,4 +166,3 @@
 
 </body>
 </html>
-
