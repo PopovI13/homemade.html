@@ -1,9 +1,8 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Fast & Furious: Drift Mode</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@600&display=swap');
@@ -18,7 +17,9 @@
       font-family: 'Orbitron', sans-serif;
       background-color: #0a0a0a;
       color: #fff;
-      overflow-x: hidden;
+      overflow: hidden; /* prevent scrollbars when moving car */
+      height: 100vh;
+      position: relative;
     }
 
     header {
@@ -77,44 +78,6 @@
       100% { text-shadow: 0 0 10px #ffcc00; }
     }
 
-    .cars {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      padding: 50px 20px;
-      background-color: #111;
-    }
-
-    .car-card {
-      background-color: #1e1e1e;
-      margin: 20px;
-      border-radius: 15px;
-      overflow: hidden;
-      box-shadow: 0 0 15px #000;
-      width: 300px;
-      transition: transform 0.4s ease, box-shadow 0.4s ease;
-      cursor: pointer;
-      position: relative;
-    }
-
-    .car-card:hover {
-      transform: scale(1.1) rotate(-1deg);
-      box-shadow: 0 0 20px #ffcc00, 0 0 30px #ffaa00;
-    }
-
-    .car-card img {
-      width: 100%;
-      height: 180px;
-      object-fit: cover;
-    }
-
-    .car-card h3 {
-      padding: 15px;
-      font-size: 1.3em;
-      color: #ffcc00;
-      text-shadow: 0 0 10px #ffaa00;
-    }
-
     .speed-counter {
       text-align: center;
       margin-top: 40px;
@@ -124,41 +87,18 @@
       animation: pulse 2s infinite;
     }
 
+    /* Drifting car style */
     .drift {
-      width: 100px;
-      height: 100px;
-      background: url('https://i.imgur.com/RYzHkIC.png') no-repeat center/contain;
-      position: fixed;
-      bottom: 20px;
-      left: -150px;
-      animation: driftCar 10s linear infinite;
-    }
-
-    @keyframes driftCar {
-      0% { left: -150px; transform: rotate(-10deg);}
-      50% { left: 100vw; transform: rotate(10deg);}
-      100% { left: -150px; transform: rotate(-10deg);}
-    }
-
-    .fun-button {
-      display: block;
-      margin: 30px auto;
-      padding: 15px 30px;
-      background: #ffcc00;
-      color: #000;
-      font-weight: bold;
-      border: none;
-      border-radius: 10px;
-      font-size: 1.2em;
-      cursor: pointer;
-      box-shadow: 0 0 10px #ffcc00;
-      transition: 0.3s ease;
-    }
-
-    .fun-button:hover {
-      transform: scale(1.1);
-      background: #ffaa00;
-      box-shadow: 0 0 20px #ffaa00;
+      width: 120px;
+      height: 60px;
+      position: absolute;
+      bottom: 40px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: url('https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Toyota_Supra_Mk4.svg/512px-Toyota_Supra_Mk4.svg.png') no-repeat center/contain;
+      filter: drop-shadow(0 0 10px #ffcc00);
+      transition: transform 0.1s ease-out;
+      user-select: none;
     }
 
     footer {
@@ -167,6 +107,9 @@
       text-align: center;
       font-size: 0.9em;
       color: #777;
+      position: fixed;
+      bottom: 0;
+      width: 100%;
     }
 
     a {
@@ -177,7 +120,6 @@
     a:hover {
       text-decoration: underline;
     }
-
   </style>
 </head>
 <body>
@@ -195,43 +137,52 @@
     SPEED: <span id="speedValue">0</span> MPH
   </section>
 
-  <section class="cars">
-    <div class="car-card">
-      <img src="https://images.unsplash.com/photo-1606851091952-fbcf0c5c7482" alt="Dodge Charger">
-      <h3>Dom's Dodge Charger</h3>
-    </div>
-    <div class="car-card">
-      <img src="https://images.unsplash.com/photo-1608137365015-437f13a53936" alt="Nissan Skyline">
-      <h3>Brian's Nissan Skyline</h3>
-    </div>
-    <div class="car-card">
-      <img src="https://images.unsplash.com/photo-1616627987772-e1fae4987f64" alt="Toyota Supra">
-      <h3>Brian's Toyota Supra</h3>
-    </div>
-  </section>
-
-  <button class="fun-button" onclick="revEngine()">Rev the Engine!</button>
-
-  <div class="drift"></div>
+  <div class="drift" id="driftCar" title="Use arrow keys to move me!"></div>
 
   <footer>
     <p>&copy; 2025 Fast & Furious Fan Site | <a href="#">Instagram</a> | <a href="#">YouTube</a></p>
   </footer>
 
   <script>
-    // Simulate a live speedometer
-    let speed = 0;
+    // Speedometer simulation
     const speedValue = document.getElementById('speedValue');
+    let speed = 0;
     setInterval(() => {
       speed = Math.floor(Math.random() * 200) + 50;
       speedValue.innerText = speed;
     }, 1000);
 
-    // Mock engine rev sound
-    function revEngine() {
-      alert("VROOOOOM! 🔊"); // Replace with real sound in production
-      // Example: let audio = new Audio('engine.mp3'); audio.play();
-    }
+    // Control the drifting car with arrow keys
+    const car = document.getElementById('driftCar');
+    let posX = window.innerWidth / 2 - 60; // start centered horizontally (car width 120/2)
+    let posY = window.innerHeight - 100;    // start near bottom (header + hero height taken into account)
+    const step = 20;  // how many pixels the car moves per key press
+
+    // Set initial position
+    car.style.left = posX + 'px';
+    car.style.top = posY + 'px';
+
+    window.addEventListener('keydown', (e) => {
+      switch(e.key) {
+        case 'ArrowUp':
+          posY = Math.max(0, posY - step);
+          break;
+        case 'ArrowDown':
+          posY = Math.min(window.innerHeight - car.offsetHeight, posY + step);
+          break;
+        case 'ArrowLeft':
+          posX = Math.max(0, posX - step);
+          car.style.transform = 'translateX(0) scaleX(1)'; // face right
+          break;
+        case 'ArrowRight':
+          posX = Math.min(window.innerWidth - car.offsetWidth, posX + step);
+          car.style.transform = 'translateX(0) scaleX(-1)'; // flip horizontally to face left
+          break;
+      }
+      car.style.left = posX + 'px';
+      car.style.top = posY + 'px';
+    });
   </script>
+
 </body>
 </html>
