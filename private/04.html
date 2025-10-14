@@ -3,8 +3,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Fast & Furious Fan Page</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Fast & Furious: Drift Mode</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@600&display=swap');
 
@@ -16,29 +16,29 @@
 
     body {
       font-family: 'Orbitron', sans-serif;
-      background-color: #111;
+      background-color: #0a0a0a;
       color: #fff;
       overflow-x: hidden;
     }
 
     header {
-      background: linear-gradient(to right, #000, #111);
+      background: linear-gradient(to right, #000000, #1a1a1a);
       padding: 30px;
       text-align: center;
-      position: relative;
     }
 
     header h1 {
       font-size: 3em;
       text-transform: uppercase;
-      letter-spacing: 4px;
+      letter-spacing: 5px;
       color: #ffcc00;
-      text-shadow: 0 0 10px #ffcc00;
+      text-shadow: 0 0 20px #ffcc00, 0 0 40px #ff9900;
+      animation: pulse 2s infinite;
     }
 
     header p {
       font-size: 1.2em;
-      color: #aaa;
+      color: #bbb;
     }
 
     .hero {
@@ -47,8 +47,6 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      text-align: center;
-      color: white;
       position: relative;
     }
 
@@ -57,35 +55,51 @@
       position: absolute;
       top: 0; left: 0;
       width: 100%; height: 100%;
-      background: rgba(0, 0, 0, 0.5);
+      background: rgba(0, 0, 0, 0.6);
     }
 
     .hero h2 {
       font-size: 3em;
+      color: #fff;
       z-index: 1;
-      text-shadow: 0 0 10px #ffcc00;
+      text-shadow: 0 0 20px #ffcc00;
+      animation: flicker 1.5s infinite alternate;
+    }
+
+    @keyframes flicker {
+      0% {opacity: 0.8;}
+      100% {opacity: 1;}
+    }
+
+    @keyframes pulse {
+      0% { text-shadow: 0 0 10px #ffcc00; }
+      50% { text-shadow: 0 0 30px #ffaa00; }
+      100% { text-shadow: 0 0 10px #ffcc00; }
     }
 
     .cars {
       display: flex;
       flex-wrap: wrap;
       justify-content: center;
-      padding: 40px 20px;
-      background-color: #222;
+      padding: 50px 20px;
+      background-color: #111;
     }
 
     .car-card {
-      background-color: #333;
+      background-color: #1e1e1e;
       margin: 20px;
-      border-radius: 10px;
+      border-radius: 15px;
       overflow: hidden;
-      box-shadow: 0 0 10px #000;
+      box-shadow: 0 0 15px #000;
       width: 300px;
-      transition: transform 0.3s;
+      transition: transform 0.4s ease, box-shadow 0.4s ease;
+      cursor: pointer;
+      position: relative;
     }
 
     .car-card:hover {
-      transform: scale(1.05);
+      transform: scale(1.1) rotate(-1deg);
+      box-shadow: 0 0 20px #ffcc00, 0 0 30px #ffaa00;
     }
 
     .car-card img {
@@ -96,8 +110,55 @@
 
     .car-card h3 {
       padding: 15px;
-      font-size: 1.2em;
+      font-size: 1.3em;
       color: #ffcc00;
+      text-shadow: 0 0 10px #ffaa00;
+    }
+
+    .speed-counter {
+      text-align: center;
+      margin-top: 40px;
+      font-size: 2.5em;
+      color: #00ffcc;
+      text-shadow: 0 0 10px #00ffcc;
+      animation: pulse 2s infinite;
+    }
+
+    .drift {
+      width: 100px;
+      height: 100px;
+      background: url('https://i.imgur.com/RYzHkIC.png') no-repeat center/contain;
+      position: fixed;
+      bottom: 20px;
+      left: -150px;
+      animation: driftCar 10s linear infinite;
+    }
+
+    @keyframes driftCar {
+      0% { left: -150px; transform: rotate(-10deg);}
+      50% { left: 100vw; transform: rotate(10deg);}
+      100% { left: -150px; transform: rotate(-10deg);}
+    }
+
+    .fun-button {
+      display: block;
+      margin: 30px auto;
+      padding: 15px 30px;
+      background: #ffcc00;
+      color: #000;
+      font-weight: bold;
+      border: none;
+      border-radius: 10px;
+      font-size: 1.2em;
+      cursor: pointer;
+      box-shadow: 0 0 10px #ffcc00;
+      transition: 0.3s ease;
+    }
+
+    .fun-button:hover {
+      transform: scale(1.1);
+      background: #ffaa00;
+      box-shadow: 0 0 20px #ffaa00;
     }
 
     footer {
@@ -116,6 +177,7 @@
     a:hover {
       text-decoration: underline;
     }
+
   </style>
 </head>
 <body>
@@ -127,6 +189,10 @@
 
   <section class="hero">
     <h2>Speed. Family. Legacy.</h2>
+  </section>
+
+  <section class="speed-counter">
+    SPEED: <span id="speedValue">0</span> MPH
   </section>
 
   <section class="cars">
@@ -144,9 +210,28 @@
     </div>
   </section>
 
+  <button class="fun-button" onclick="revEngine()">Rev the Engine!</button>
+
+  <div class="drift"></div>
+
   <footer>
     <p>&copy; 2025 Fast & Furious Fan Site | <a href="#">Instagram</a> | <a href="#">YouTube</a></p>
   </footer>
 
+  <script>
+    // Simulate a live speedometer
+    let speed = 0;
+    const speedValue = document.getElementById('speedValue');
+    setInterval(() => {
+      speed = Math.floor(Math.random() * 200) + 50;
+      speedValue.innerText = speed;
+    }, 1000);
+
+    // Mock engine rev sound
+    function revEngine() {
+      alert("VROOOOOM! 🔊"); // Replace with real sound in production
+      // Example: let audio = new Audio('engine.mp3'); audio.play();
+    }
+  </script>
 </body>
 </html>
