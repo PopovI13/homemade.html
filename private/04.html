@@ -1,1 +1,152 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fast & Furious Fan Page</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@600&display=swap');
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Orbitron', sans-serif;
+      background-color: #111;
+      color: #fff;
+      overflow-x: hidden;
+    }
+
+    header {
+      background: linear-gradient(to right, #000, #111);
+      padding: 30px;
+      text-align: center;
+      position: relative;
+    }
+
+    header h1 {
+      font-size: 3em;
+      text-transform: uppercase;
+      letter-spacing: 4px;
+      color: #ffcc00;
+      text-shadow: 0 0 10px #ffcc00;
+    }
+
+    header p {
+      font-size: 1.2em;
+      color: #aaa;
+    }
+
+    .hero {
+      background: url('https://wallpapercave.com/wp/wp1874038.jpg') no-repeat center center/cover;
+      height: 80vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      color: white;
+      position: relative;
+    }
+
+    .hero::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+    }
+
+    .hero h2 {
+      font-size: 3em;
+      z-index: 1;
+      text-shadow: 0 0 10px #ffcc00;
+    }
+
+    .cars {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      padding: 40px 20px;
+      background-color: #222;
+    }
+
+    .car-card {
+      background-color: #333;
+      margin: 20px;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 0 10px #000;
+      width: 300px;
+      transition: transform 0.3s;
+    }
+
+    .car-card:hover {
+      transform: scale(1.05);
+    }
+
+    .car-card img {
+      width: 100%;
+      height: 180px;
+      object-fit: cover;
+    }
+
+    .car-card h3 {
+      padding: 15px;
+      font-size: 1.2em;
+      color: #ffcc00;
+    }
+
+    footer {
+      background-color: #000;
+      padding: 20px;
+      text-align: center;
+      font-size: 0.9em;
+      color: #777;
+    }
+
+    a {
+      color: #ffcc00;
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Fast & Furious</h1>
+    <p>Live life a quarter mile at a time.</p>
+  </header>
+
+  <section class="hero">
+    <h2>Speed. Family. Legacy.</h2>
+  </section>
+
+  <section class="cars">
+    <div class="car-card">
+      <img src="https://images.unsplash.com/photo-1606851091952-fbcf0c5c7482" alt="Dodge Charger">
+      <h3>Dom's Dodge Charger</h3>
+    </div>
+    <div class="car-card">
+      <img src="https://images.unsplash.com/photo-1608137365015-437f13a53936" alt="Nissan Skyline">
+      <h3>Brian's Nissan Skyline</h3>
+    </div>
+    <div class="car-card">
+      <img src="https://images.unsplash.com/photo-1616627987772-e1fae4987f64" alt="Toyota Supra">
+      <h3>Brian's Toyota Supra</h3>
+    </div>
+  </section>
+
+  <footer>
+    <p>&copy; 2025 Fast & Furious Fan Site | <a href="#">Instagram</a> | <a href="#">YouTube</a></p>
+  </footer>
+
+</body>
+</html>
