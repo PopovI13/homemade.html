@@ -89,13 +89,13 @@
 
     /* Drifting car style */
     .drift {
-      width: 120px;
-      height: 60px;
+      width: 140px;
+      height: 70px;
       position: absolute;
       bottom: 40px;
       left: 50%;
       transform: translateX(-50%);
-      background: url('https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Toyota_Supra_Mk4.svg/512px-Toyota_Supra_Mk4.svg.png') no-repeat center/contain;
+      background: url('https://cdn-icons-png.flaticon.com/512/743/743922.png') no-repeat center/contain;
       filter: drop-shadow(0 0 10px #ffcc00);
       transition: transform 0.1s ease-out;
       user-select: none;
@@ -154,8 +154,8 @@
 
     // Control the drifting car with arrow keys
     const car = document.getElementById('driftCar');
-    let posX = window.innerWidth / 2 - 60; // start centered horizontally (car width 120/2)
-    let posY = window.innerHeight - 100;    // start near bottom (header + hero height taken into account)
+    let posX = window.innerWidth / 2 - 70; // start centered horizontally (car width 140/2)
+    let posY = window.innerHeight - 110;    // start near bottom (header + hero height taken into account)
     const step = 20;  // how many pixels the car moves per key press
 
     // Set initial position
