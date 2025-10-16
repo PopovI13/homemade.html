@@ -11,14 +11,20 @@
   body {
     margin: 0; padding: 0;
     font-family: 'Orbitron', sans-serif;
-    background: black;
+    background: #001022; /* dark space blue */
     overflow: hidden;
   }
   canvas {
     display: block;
     margin: 0 auto;
-    background: black;
     cursor: none;
+  }
+  #starCanvas {
+    position: absolute; top: 0; left: 0; z-index: 0;
+  }
+  #gameCanvas {
+    position: relative; z-index: 1;
+    background: transparent; /* transparent so starfield shows */
   }
   .game-container {
     position: relative;
@@ -74,8 +80,8 @@
 </head>
 <body>
   <div class="game-container">
-    <canvas id="starCanvas" style="position:absolute; top:0; left:0; z-index:0;"></canvas>
-    <canvas id="gameCanvas" width="800" height="600" style="position:relative; z-index:1;"></canvas>
+    <canvas id="starCanvas"></canvas>
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
 
     <div class="absolute top-4 left-4 text-white z-10" style="font-size:1.5rem; font-weight:700;">
       SCORE: <span id="scoreEl">0</span>
@@ -119,6 +125,7 @@
   const aspectRatio = maxWidth / maxHeight;
 
   function resizeCanvas() {
+    // Resize game canvas
     const screenWidth = window.innerWidth;
     const screenHeight = window.innerHeight;
     if(screenWidth / screenHeight > aspectRatio){
@@ -128,8 +135,15 @@
       canvas.width = screenWidth * 0.9;
       canvas.height = canvas.width / aspectRatio;
     }
+    // Resize star canvas to same size
     starCanvas.width = canvas.width;
     starCanvas.height = canvas.height;
+
+    // Adjust player position after resize (optional)
+    if(player) {
+      player.y = canvas.height - player.height - 10;
+      if(player.x + player.width > canvas.width) player.x = canvas.width - player.width;
+    }
   }
   window.addEventListener('resize', resizeCanvas);
   resizeCanvas();
@@ -142,71 +156,87 @@
     reset() {
       this.x = Math.random() * starCanvas.width;
       this.y = Math.random() * starCanvas.height;
-      this.size = Math.random() * 1.5;
-      this.speed = this.size * 0.2;
-      this.brightness = Math.random();
+      this.size = Math.random() * 1.5 + 0.3;
+      this.speed = this.size * 0.3;
+      this.brightness = Math.random() * 0.7 + 0.3;
       this.brightnessDirection = Math.random() > 0.5 ? 1 : -1;
     }
     update() {
       this.y += this.speed;
-      if(this.y > starCanvas.height) this.y = 0;
+      if(this.y > star
+      this.y += this.speed;
+      if(this.y > starCanvas.height) {
+        this.reset();
+        this.y = 0;
+      }
+      // Twinkle effect
       this.brightness += 0.01 * this.brightnessDirection;
-      if(this.brightness >= 1) this.brightnessDirection = -1;
-      if(this.brightness <= 0.2) this.brightnessDirection = 1;
+      if(this.brightness >= 1 || this.brightness <= 0.3) this.brightnessDirection *= -1;
     }
-    draw(ctx) {
-      ctx.beginPath();
-      ctx.fillStyle = `rgba(255, 255, 255, ${this.brightness})`;
-      ctx.shadowBlur = 10;
-      ctx.shadowColor = 'white';
-      ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-      ctx.fill();
+    draw() {
+      starCtx.beginPath();
+      starCtx.arc(this.x, this.y, this.size, 0, 2 * Math.PI);
+      starCtx.fillStyle = `rgba(255, 255, 255, ${this.brightness})`;
+      starCtx.shadowColor = 'white';
+      starCtx.shadowBlur = 6;
+      starCtx.fill();
     }
   }
+
   const stars = [];
-  for(let i=0; i<150; i++) {
+  const STAR_COUNT = 150;
+
+  for(let i = 0; i < STAR_COUNT; i++){
     stars.push(new Star());
   }
 
-  // --- Player ---
+  function updateStars() {
+    starCtx.clearRect(0, 0, starCanvas.width, starCanvas.height);
+    for(const star of stars) {
+      star.update();
+      star.draw();
+    }
+  }
+
+  // --- Player setup ---
   class Player {
     constructor() {
       this.width = 50;
-      this.height = 30;
+      this.height = 40;
       this.x = canvas.width / 2 - this.width / 2;
       this.y = canvas.height - this.height - 10;
       this.speed = 6;
-      this.color = '#00FF00';
-      this.lives = 3;
-      this.shootCooldown = 0;
-      this.powerUp = null;
-      this.powerUpTimer = 0;
+      this.color = '#FFE81F';
+      this.moveLeft = false;
+      this.moveRight = false;
+      this.canShoot = true;
+      this.shootCooldown = 300; // milliseconds
     }
-    move(dir) {
-      this.x += dir * this.speed;
+    draw() {
+      ctx.fillStyle = this.color;
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 2;
+      // Simple triangle ship
+      ctx.beginPath();
+      ctx.moveTo(this.x + this.width / 2, this.y);
+      ctx.lineTo(this.x, this.y + this.height);
+      ctx.lineTo(this.x + this.width, this.y + this.height);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+    }
+    update() {
+      if(this.moveLeft) this.x -= this.speed;
+      if(this.moveRight) this.x += this.speed;
+      // Boundaries
       if(this.x < 0) this.x = 0;
       if(this.x + this.width > canvas.width) this.x = canvas.width - this.width;
     }
-    update() {
-      if(this.shootCooldown > 0) this.shootCooldown--;
-      if(this.powerUp) {
-        this.powerUpTimer--;
-        if(this.powerUpTimer <= 0) {
-          this.powerUp = null;
-        }
-      }
-    }
-    draw(ctx) {
-      ctx.fillStyle = this.powerUp === 'shield' ? '#00FFFF' : this.color;
-      ctx.shadowColor = ctx.fillStyle;
-      ctx.shadowBlur = 10;
-      ctx.fillRect(this.x, this.y, this.width, this.height);
-      // Ship cockpit glow
-      ctx.fillStyle = '#0ff';
-      ctx.shadowColor = '#0ff';
-      ctx.shadowBlur = 20;
-      ctx.fillRect(this.x + this.width / 3, this.y + 5, this.width / 3, this.height / 2);
-      ctx.shadowBlur = 0;
+    shoot() {
+      if(!this.canShoot) return null;
+      this.canShoot = false;
+      setTimeout(() => { this.canShoot = true }, this.shootCooldown);
+      return new Bullet(this.x + this.width / 2, this.y);
     }
   }
 
@@ -215,402 +245,176 @@
     constructor(x, y) {
       this.x = x;
       this.y = y;
-      this.width = 6;
-      this.height = 10;
-      this.speed = 10;
-      this.color = '#FFD700';
+      this.radius = 4;
+      this.speed = 9;
+      this.color = '#fff';
+      this.active = true;
     }
     update() {
       this.y -= this.speed;
+      if(this.y < 0) this.active = false;
     }
-    draw(ctx) {
+    draw() {
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.radius, 0, 2 * Math.PI);
       ctx.fillStyle = this.color;
-      ctx.shadowColor = '#FFD700';
+      ctx.shadowColor = '#FFE81F';
       ctx.shadowBlur = 10;
-      ctx.fillRect(this.x, this.y, this.width, this.height);
-      ctx.shadowBlur = 0;
+      ctx.fill();
     }
   }
 
-  // --- Enemy ---
+  // --- Simple enemy for demo ---
   class Enemy {
-    constructor(x, y, speed, type = 'normal') {
+    constructor(x, y) {
       this.x = x;
       this.y = y;
       this.width = 40;
       this.height = 30;
-      this.speed = speed;
-      this.color = type === 'hard' ? '#FF4500' : '#FF0000';
-      this.type = type;
-      this.health = type === 'hard' ? 3 : 1;
-      this.shootTimer = type === 'hard' ? 90 : 0; // Hard enemies can shoot
-    }
-    update() {
-      this.y += this.speed;
-      if(this.type === 'hard') {
-        this.shootTimer--;
-        if(this.shootTimer <= 0) {
-          shootEnemyBullet(this.x + this.width/2, this.y + this.height);
-          this.shootTimer = 120; // cooldown for next shot
-        }
-      }
-    }
-    draw(ctx) {
-      ctx.fillStyle = this.color;
-      ctx.shadowColor = this.color;
-      ctx.shadowBlur = 10;
-      ctx.fillRect(this.x, this.y, this.width, this.height);
-      ctx.shadowBlur = 0;
-    }
-  }
-
-  // --- Enemy Bullet ---
-  class EnemyBullet {
-    constructor(x, y) {
-      this.x = x;
-      this.y = y;
-      this.width = 6;
-      this.height = 12;
-      this.speed = 6;
-      this.color = '#FF8C00';
-    }
-    update() {
-      this.y += this.speed;
-    }
-    draw(ctx) {
-      ctx.fillStyle = this.color;
-      ctx.shadowColor = this.color;
-      ctx.shadowBlur = 10;
-      ctx.fillRect(this.x, this.y, this.width, this.height);
-      ctx.shadowBlur = 0;
-    }
-  }
-
-  // --- PowerUp ---
-  class PowerUp {
-    constructor(x, y, type) {
-      this.x = x;
-      this.y = y;
-      this.width = 24;
-      this.height = 24;
-      this.type = type; // 'shield' or 'double-shot'
       this.speed = 2;
-      this.color = type === 'shield' ? '#00FFFF' : '#FFD700';
+      this.color = '#FF4C4C';
+      this.active = true;
     }
     update() {
-      this.y += this.speed;
+      this.y += this.speed * 0.4;
+      if(this.y > canvas.height) this.active = false;
     }
-    draw(ctx) {
+    draw() {
       ctx.fillStyle = this.color;
-      ctx.shadowColor = this.color;
-      ctx.shadowBlur = 10;
+      ctx.shadowColor = 'red';
+      ctx.shadowBlur = 8;
       ctx.fillRect(this.x, this.y, this.width, this.height);
-      ctx.shadowBlur = 0;
+      ctx.strokeStyle = 'white';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(this.x, this.y, this.width, this.height);
     }
   }
 
   // --- Game variables ---
-  const player = new Player();
-  const bullets = [];
-  const enemies = [];
-  const enemyBullets = [];
-  const powerUps = [];
+  let player = new Player();
+  let bullets = [];
+  let enemies = [];
+  let lives = 3;
 
-  let keys = {};
-  let enemySpawnTimer = 0;
-  let enemySpawnInterval = 90; // frames between spawns
-  let gameOver = false;
-
-  // --- Sounds (Tone.js) ---
-  const synth = new Tone.Synth().toDestination();
-  const explosionSynth = new Tone.MembraneSynth().toDestination();
-
-  function playShootSound() {
-    synth.triggerAttackRelease('C5', '8n');
-  }
-  function playExplosionSound() {
-    explosionSynth.triggerAttackRelease('C2', '16n');
-  }
-  function playPowerUpSound() {
-    synth.triggerAttackRelease('G6', '8n');
-  }
-
-  // --- Helper functions ---
-  function updateScoreDisplay() {
-    scoreEl.textContent = score;
-  }
-
-  function updateLivesDisplay() {
+  function drawLives() {
     livesContainer.innerHTML = 'LIVES: ';
-    for(let i=0; i<player.lives; i++){
+    for(let i=0; i<lives; i++) {
       const life = document.createElement('div');
       life.classList.add('life');
       livesContainer.appendChild(life);
     }
   }
 
-  // --- Shoot functions ---
-  function shootBullet() {
-    if(player.shootCooldown === 0){
-      if(player.powerUp === 'double-shot'){
-        bullets.push(new Bullet(player.x + 5, player.y));
-        bullets.push(new Bullet(player.x + player.width - 11, player.y));
-      } else {
-        bullets.push(new Bullet(player.x + player.width/2 - 3, player.y));
-      }
-      player.shootCooldown = 15; // cooldown frames
-      playShootSound();
-    }
+  function spawnEnemy() {
+    const x = Math.random() * (canvas.width - 40);
+    enemies.push(new Enemy(x, -40));
   }
 
-  function shootEnemyBullet(x, y){
-    enemyBullets.push(new EnemyBullet(x - 3, y));
+  // Spawn enemies every 1.8 seconds
+  let enemyInterval;
+  function startEnemySpawning() {
+    enemyInterval = setInterval(spawnEnemy, 1800);
+  }
+  function stopEnemySpawning() {
+    clearInterval(enemyInterval);
   }
 
-  // --- Collision Detection ---
-  function rectsOverlap(a, b) {
-    return !(a.x + a.width < b.x || a.x > b.x + b.width || a.y + a.height < b.y || a.y > b.y + b.height);
-  }
-
-  // --- Game Over ---
-  function showGameOver() {
+  // Game over function
+  function gameOver() {
+    gameRunning = false;
+    stopEnemySpawning();
     modalScore.textContent = score;
     modalEl.classList.remove('hidden');
   }
 
-  // --- Reset game ---
+  // Reset game state
   function resetGame() {
     score = 0;
-    updateScoreDisplay();
-    player.lives = 3;
-    updateLivesDisplay();
-    bullets.length = 0;
-    enemies.length = 0;
-    enemyBullets.length = 0;
-    powerUps.length = 0;
-    gameOver = false;
+    lives = 3;
+    bullets = [];
+    enemies = [];
     player.x = canvas.width / 2 - player.width / 2;
-    player.powerUp = null;
-    player.powerUpTimer = 0;
-    modalEl.classList.add('hidden');
+    drawLives();
+    scoreEl.textContent = score;
   }
 
-  // --- Main Update Loop ---
-  function update() {
-    if(gameOver) return;
+  // Main game loop
+  function gameLoop() {
+    if(!gameRunning) return;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Player update
     player.update();
+    player.draw();
 
-    // Move player by keypress
-    if(keys['ArrowLeft'] || keys['a']) player.move(-1);
-    if(keys['ArrowRight'] || keys['d']) player.move(1);
-    if(keys[' ']) shootBullet();
+    bullets.forEach((bullet, idx) => {
+      bullet.update();
+      if(!bullet.active) bullets.splice(idx, 1);
+      else bullet.draw();
+    });
 
-    // Update bullets
-    for(let i=bullets.length-1; i>=0; i--) {
-      let b = bullets[i];
-      b.update();
-      if(b.y + b.height < 0) bullets.splice(i,1);
-    }
-
-    // Spawn enemies
-    enemySpawnTimer--;
-    if(enemySpawnTimer <= 0) {
-      enemySpawnTimer = enemySpawnInterval;
-
-      const enemyType = Math.random() < 0.2 ? 'hard' : 'normal'; // 20% chance hard enemy
-      const enemySpeed = enemyType === 'hard' ? 2 : 3;
-
-      const enemyX = Math.random() * (canvas.width - 40);
-      enemies.push(new Enemy(enemyX, -30, enemySpeed, enemyType));
-    }
-
-    // Update enemies
-    for(let i = enemies.length-1; i>=0; i--) {
-      const e = enemies[i];
-      e.update();
-
-      // Remove if off bottom of screen, but only lose life if collided with player
-      if(e.y > canvas.height){
-        // Check collision with player before disappearing
-        const enemyBottom = e.y + e.height;
-        const enemyRight = e.x + e.width;
-        const playerRight = player.x + player.width;
-        const playerBottom = player.y + player.height;
-
-        const collided = !(enemyRight < player.x || e.x > playerRight || enemyBottom < player.y || e.y > playerBottom);
-
-        if(collided) {
-          if(player.powerUp !== 'shield'){
-            player.lives--;
-            updateLivesDisplay();
-            if(player.lives <= 0) {
-              gameOver = true;
-              showGameOver();
-            }
-          } else {
-            // Shield powerup absorbs one hit
-            player.powerUp = null;
-            player.powerUpTimer = 0;
-          }
-        }
-        enemies.splice(i,1);
-        continue;
-      }
-
-      // Check enemy collision with player (if enemy still on screen)
-      const enemyBox = {x: e.x, y: e.y, width: e.width, height: e.height};
-      const playerBox = {x: player.x, y: player.y, width: player.width, height: player.height};
-
-      if(rectsOverlap(enemyBox, playerBox)){
-        if(player.powerUp !== 'shield'){
-          player.lives--;
-          updateLivesDisplay();
-          if(player.lives <= 0) {
-            gameOver = true;
-            showGameOver();
-          }
-        } else {
-          player.powerUp = null;
-          player.powerUpTimer = 0;
-        }
-        enemies.splice(i,1);
-        continue;
-      }
-
-      // Check bullet hits on enemy
-      for(let j = bullets.length-1; j>=0; j--) {
-        const b = bullets[j];
-        if(rectsOverlap(b, e)){
-          bullets.splice(j,1);
-          e.health--;
-          if(e.health <= 0){
-            playExplosionSound();
-            score += e.type === 'hard' ? 20 : 10;
-            updateScoreDisplay();
-
-            // Chance to spawn power-up from hard enemies
-            if(e.type === 'hard' && Math.random() < 0.4){
-              const puType = Math.random() < 0.5 ? 'shield' : 'double-shot';
-              powerUps.push(new PowerUp(e.x, e.y, puType));
-            }
-            enemies.splice(i,1);
-          }
-          break;
-        }
-      }
-    }
-
-    // Update enemy bullets
-    for(let i = enemyBullets.length-1; i >= 0; i--) {
-      const eb = enemyBullets[i];
-      eb.update();
-      if(eb.y > canvas.height) enemyBullets.splice(i,1);
+    enemies.forEach((enemy, eIdx) => {
+      enemy.update();
+      if(!enemy.active) enemies.splice(eIdx, 1);
+      else enemy.draw();
 
       // Check collision with player
-      const ebBox = {x: eb.x, y: eb.y, width: eb.width, height: eb.height};
-      const playerBox = {x: player.x, y: player.y, width: player.width, height: player.height};
-      if(rectsOverlap(ebBox, playerBox)) {
-        if(player.powerUp !== 'shield'){
-          player.lives--;
-          updateLivesDisplay();
-          if(player.lives <= 0) {
-            gameOver = true;
-            showGameOver();
-          }
-        } else {
-          player.powerUp = null;
-          player.powerUpTimer = 0;
+      if(
+        enemy.x < player.x + player.width &&
+        enemy.x + enemy.width > player.x &&
+        enemy.y < player.y + player.height &&
+        enemy.y + enemy.height > player.y
+      ) {
+        enemies.splice(eIdx, 1);
+        lives--;
+        drawLives();
+        if(lives <= 0) gameOver();
+      }
+
+      // Check collision with bullets
+      bullets.forEach((bullet, bIdx) => {
+        if(
+          bullet.x > enemy.x &&
+          bullet.x < enemy.x + enemy.width &&
+          bullet.y > enemy.y &&
+          bullet.y < enemy.y + enemy.height
+        ) {
+          enemies.splice(eIdx, 1);
+          bullets.splice(bIdx, 1);
+          score += 10;
+          scoreEl.textContent = score;
         }
-        enemyBullets.splice(i,1);
-      }
-    }
-
-    // Update power-ups
-    for(let i = powerUps.length-1; i >= 0; i--){
-      const pu = powerUps[i];
-      pu.update();
-
-      if(pu.y > canvas.height){
-        powerUps.splice(i,1);
-        continue;
-      }
-
-      if(rectsOverlap(pu, player)){
-        playPowerUpSound();
-        if(pu.type === 'shield'){
-          player.powerUp = 'shield';
-          player.powerUpTimer = 600; // lasts ~10 seconds at 60fps
-        } else if(pu.type === 'double-shot'){
-          player.powerUp = 'double-shot';
-          player.powerUpTimer = 600;
-        }
-        powerUps.splice(i,1);
-      }
-    }
-  }
-
-  // --- Draw loop ---
-  function draw() {
-    // Clear game canvas
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-
-    // Draw player
-    player.draw(ctx);
-
-    // Draw bullets
-    bullets.forEach(b => b.draw(ctx));
-
-    // Draw enemies
-    enemies.forEach(e => e.draw(ctx));
-
-    // Draw enemy bullets
-    enemyBullets.forEach(eb => eb.draw(ctx));
-
-    // Draw power-ups
-    powerUps.forEach(pu => pu.draw(ctx));
-  }
-
-  // --- Starfield draw/update ---
-  function drawStarfield() {
-    starCtx.clearRect(0,0,starCanvas.width, starCanvas.height);
-    stars.forEach(s => {
-      s.update();
-      s.draw(starCtx);
+      });
     });
+
+    updateStars();
+
+    requestAnimationFrame(gameLoop);
   }
 
-  // --- Game loop ---
-  function gameLoop() {
-    if(gameRunning){
-      update();
-      draw();
-      drawStarfield();
-      requestAnimationFrame(gameLoop);
-    }
-  }
-
-  // --- Event listeners ---
+  // Controls
   window.addEventListener('keydown', e => {
-    keys[e.key.toLowerCase()] = true;
-    if(e.key === ' '){
-      e.preventDefault();
+    if(e.key === 'ArrowLeft' || e.key.toLowerCase() === 'a') player.moveLeft = true;
+    if(e.key === 'ArrowRight' || e.key.toLowerCase() === 'd') player.moveRight = true;
+    if(e.key === ' ' || e.key === 'Spacebar') {
+      const bullet = player.shoot();
+      if(bullet) bullets.push(bullet);
     }
   });
   window.addEventListener('keyup', e => {
-    keys[e.key.toLowerCase()] = false;
+    if(e.key === 'ArrowLeft' || e.key.toLowerCase() === 'a') player.moveLeft = false;
+    if(e.key === 'ArrowRight' || e.key.toLowerCase() === 'd') player.moveRight = false;
   });
 
   startGameBtn.addEventListener('click', () => {
+    modalEl.classList.add('hidden');
     resetGame();
     gameRunning = true;
+    startEnemySpawning();
     gameLoop();
   });
 
-  // Initial display
-  updateScoreDisplay();
-  updateLivesDisplay();
+  drawLives();
+  updateStars();
 
 })();
 </script>
