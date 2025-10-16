@@ -1,1 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Star Wars: Galaxy Annihilator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet" />
+    <style>
+        body {
+            font-family: 'Orbitron', sans-serif;
+            overflow: hidden; /* Prevent scrollbars */
+            margin: 0;
+            background-color: black;
+            color: white;
+        }
+        canvas {
+            background-color: #000;
+            display: block;
+            margin: 0 auto;
+            cursor: none;
+            background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMDAiIGhlaWdodD0iMzAwIj48ZGVmcz48cmFkaWFsR3JhZGllbnQgaWQ9ImciIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIiBjeD0iMTAwJSIgY3k9IjEwMCUiIHI9IjE1MCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiMwMDAiLz48c3RvcCBvZmZnZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiMwMDExMjAiLz48L3JhZGlhbEdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2cpIi8+PC9zdmc+');
+        }
+        .game-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            width: 100vw;
+            position: relative;
+        }
+        .modal {
+            background-color: rgba(0, 0, 0, 0.8);
+            border: 2px solid #FFE81F; /* Star Wars yellow */
+            color: white;
+        }
+        .life {
+            width: 30px;
+            height: 30px;
+            display: inline-block;
+            background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4MCIgaGVpZ2h0PSI2MCIgdmlld0JveD0iMCAwIDgwIDYwIj48cGF0aCBkPSJNNCAzMGMyMSAwIDIxIDE5IDQwIDE5czE5LTE5IDQwLTE5djIuM2MwIDExLjQtMTMuNCAyMC43LTMwIDIwLjdoLTIwYy0xNi42IDAtMzAtOS4zLTMwLTIwLjdWMzB6IiBmaWxsPSIjYjBiMGIwIi8+PHBhdGggZD0iTTMwIDMzaDE4djJoLTE4eiIgZmlsbD0iIzgwODA4MCIvPjxwYXRoIGQ9Ik0zMyA1My41bDEuNS0yLjVoMTJsMS41IDIuNXoiIGZpbGw9IiM4MDgwODAiLz48cGF0aCBkPSJNNCAzMGg3MmMwLTEyLjctMTYtMjMtMzYtMjNTNCAxNy4zIDQgMzB6IiBmaWxsPSIjZDZkNmQ2Ii8+PHBhdGggZD0iTTI1IDMwYzAgMy4zIDEuMyA2IDIuOSA4LjNsMS4yLTMuN2MtLjYtMS4yLTEtMi42LTEtNC4xIDAtNC40IDMuMi04IDcuMS04czcuMSA0IDcgOC41YzAgMS43LS41IDMuMy0xLjMgNC44bDEuMyAzLjVjMS44LTIuNSAyLjktNS41IDIuOS04LjkgMC03LjYtNi4yLTE0LTExLTE0cy0xMSA2LjQtMTEgMTR6IiBmaWxsPSIjYjBiMGIwIi8+PHBhdGggZD0iTTUwIDMwaDE2djIuNUg1MHoiIGZpbGw9IiM4MDgwODAiLz48cGF0aCBkPSJNNTQuNSA0MC41aDEwdjJoLTEweiIgZmlsbD0iIzgwODA4MCIvPjxwYXRoIGQ9Ik01MCAzNWgxM3YyaC0xM3oiIGZpbGw9IiM4MDgwODAiLz48cGF0aCBkPSJNNjIgMjdjMCAyLjggMS4xIDUuMyAyLjkgNy4zbDEuMi0zLjJjLS43LTEtMS4xLTIuMy0xLjEtMy42IDAtMy44IDIuOC03IDYtN3M2IDMuMSA2IDYuNWMwIDEuNS0uNCAzLTEuMiA0LjJsMS4yIDIuOWMyLTIuMiAzLjEtNS4xIDMuMS04LjIgMC02LjctNS4yLTEyLTExLTEycy0xMSA1LjMtMTEgMTJ6IiBmaWxsPSIjYjBiMGIwIi8+PC9zdmc+');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            margin-left: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="absolute top-4 left-4 text-lg z-20 select-none">
+            SCORE: <span id="scoreEl">0</span>
+        </div>
+        <div id="livesContainer" class="absolute top-4 right-4 text-lg z-20 flex items-center gap-1 select-none">
+            LIVES:
+        </div>
+        <canvas id="gameCanvas"></canvas>
+        <div id="modalEl" class="absolute inset-0 flex flex-col items-center justify-center text-center hidden">
+            <div class="modal p-8 rounded-lg shadow-2xl text-white max-w-md w-full">
+                <h1 id="modalScore" class="text-4xl font-bold mb-4 text-[#FFE81F]">0</h1>
+                <p class="text-lg mb-6">POINTS</p>
+                <button id="startGameBtn" class="bg-[#FFE81F] text-black hover:bg-yellow-400 font-bold py-3 px-8 rounded-full transition duration-300 transform hover:scale-105">
+                    START GAME
+                </button>
+                <p class="mt-4 text-sm opacity-70">Use Left/Right arrows or A/D to move, Space to shoot</p>
+            </div>
+        </div>
+    </div>
+
+<script>
+    // --- Basic Setup ---
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const scoreEl = document.getElementById('scoreEl');
+    const modalEl = document.getElementById('modalEl');
+    const modalScore = document.getElementById('modalScore');
+    const startGameBtn = document.getElementById('startGameBtn');
+    const livesContainer = document.getElementById('livesContainer');
+
+    const maxWidth = 800;
+    const maxHeight = 600;
+    const aspectRatio = maxWidth / maxHeight;
+
+    function resizeCanvas() {
+        const screenWidth = window.innerWidth;
+        const screenHeight = window.innerHeight;
+        if (screenWidth / screenHeight > aspectRatio) {
+            canvas.height = screenHeight * 0.9;
+            canvas.width = canvas.height * aspectRatio;
+        } else {
+            canvas.width = screenWidth * 0.9;
+            canvas.height = canvas.width / aspectRatio;
+        }
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    // --- Audio Setup ---
+    let soundEnabled = false;
+    const laserSynth = new Tone.Synth({ oscillator: { type: 'sawtooth' }, envelope: { attack: 0.01, decay: 0.1, sustain: 0.2, release: 0.1 } }).toDestination();
+    const explosionSynth = new Tone.NoiseSynth({ noise: { type: 'white' }, envelope: { attack: 0.005, decay: 0.2, sustain: 0 } }).toDestination();
+    const powerupSynth = new Tone.Synth({ oscillator: { type: 'triangle' }, envelope: { attack: 0.05, decay: 0.2, sustain: 0.3, release: 0.2 } }).toDestination();
+    const damageSynth = new Tone.Synth({ oscillator: { type: 'square' }, envelope: { attack: 0.01, decay: 0.5, sustain: 0, release: 0.2 } }).toDestination();
+
+    // --- Game Variables ---
+    let animationId;
+    let score = 0;
+    let projectiles = [];
+    let enemies = [];
+    let enemySpawnIntervalId;
+    let baseSpawnInterval = 1200;
+    let baseEnemySpeed = 1;
+    let keys = {};
+    let gameRunning = false;
+
+    // --- Player Class ---
+    class Player {
+        constructor() {
+            this.velocity = { x: 0 };
+            this.lives = 3;
+            this.isInvincible = false;
+            this.isTripleShotActive = false;
+            this.opacity = 1;
+            this.width = 64;
+            this.height = 48;
+            this.position = { x: canvas.width / 2 - this.width / 2, y: canvas.height - this.height - 20 };
+            this.image = new Image();
+            this.image.src = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4MCIgaGVpZ2h0PSI2MCIgdmlld0JveD0iMCAwIDgwIDYwIj48cGF0aCBkPSJNNCAzMGMyMSAwIDIxIDE5IDQwIDE5czE5LTE5IDQwLTE5djIuM2MwIDExLjQtMTMuNCAyMC43LTMwIDIwLjdoLTIwYy0xNi42IDAtMzAtOS4zLTMwLTIwLjdWMzB6IiBmaWxsPSIjYjBiMGIwIi8+PHBhdGggZD0iTTMwIDMzaDE4djJoLTE4eiIgZmlsbD0iIzgwODA4MCIvPjxwYXRoIGQ9Ik0zMyA1My41bDEuNS0yLjVoMTJsMS41IDIuNXoiIGZpbGw9IiM4MDgwODAiLz48cGF0aCBkPSJNNCAzMGg3MmMwLTEyLjctMTYtMjMtMzYtMjNTNCAxNy4zIDQgMzB6IiBmaWxsPSIjZDZkNmQ2Ii8+PHBhdGggZD0iTTI1IDMwYzAgMy4zIDEuMyA2IDIuOSA4LjNsMS4yLTMuN2MtLjYtMS4yLTEtMi42LTEtNC4xIDAtNC40IDMuMi04IDcuMS04czcuMSA0IDcgOC41YzAgMS43LS41IDMuMy0xLjMgNC44bDEuMyAzLjVjMS44LTIuNSAyLjktNS41IDIuOS04LjkgMC03LjYtNi4yLTE0LTExLTE0cy0xMSA2LjQtMTEgMTR6IiBmaWxsPSIjYjBiMGIwIi8+PHBhdGggZD0iTTUwIDMwaDE2djIuNUg1MHoiIGZpbGw9IiM4MDgwODAiLz48cGF0aCBkPSJNNTQuNSA0MC41aDEwdjJoLTEweiIgZmlsbD0iIzgwODA4MCIvPjxwYXRoIGQ9Ik01MCAzNWgxM3YyaC0xM3oiIGZpbGw9IiM4MDgwODAiLz48cGF0aCBkPSJNNjIgMjdjMCAyLjggMS4xIDUuMyAyLjkgNy4zbDEuMi0zLjJjLS43LTEtMS4xLTIuMy0xLjEtMy42IDAtMy44IDIuOC03IDYtN3M2IDMuMSA2IDYuNWMwIDEuNS0uNCAzLTEuMiA0LjJsMS4yIDIuOWMyLTIuMiAzLjEtNS4xIDMuMS04LjIgMC02LjctNS4yLTEyLTExLTEycy0xMSA1LjMtMTEgMTJ6IiBmaWxsPSIjYjBiMGIwIi8+PC9zdmc+';
+        }
+        draw() {
+            ctx.save();
+            ctx.globalAlpha = this.opacity;
+            ctx.drawImage(this.image, this.position.x, this.position.y, this.width, this.height);
+            ctx.restore();
+        }
+        update() {
+            this.position.x += this.velocity.x;
+            if (this.position.x < 0) this.position.x = 0;
+            else if (this.position.x + this.width > canvas.width) this.position.x = canvas.width - this.width;
+            // Blink effect when invincible
+            if (this.isInvincible) {
+                this.opacity = Math.abs(Math.cos(performance.now() / 100));
+            } else {
+                this.opacity = 1;
+            }
+            this.draw();
+        }
+        shoot() {
+            // Shoot one or triple shot
+            if (this.isTripleShotActive) {
+                // Center shot
+                projectiles.push(new Projectile({
+                    position: { x: this.position.x + this.width / 2, y: this.position.y },
+                    velocity: { x: 0, y: -8 },
+                    color: '#FFE81F'
+                }));
+                // Left shot
+                projectiles.push(new Projectile({
+                    position: { x: this.position.x + this.width / 2, y: this.position.y },
+                    velocity: { x: -2, y: -7 },
+                    color: '#FFE81F'
+                }));
+                // Right shot
+                projectiles.push(new Projectile({
+                    position: { x: this.position.x + this.width / 2, y: this.position.y },
+                    velocity: { x: 2, y: -7 },
+                    color: '#FFE81F'
+                }));
+            } else {
+                projectiles.push(new Projectile({
+                    position: { x: this.position.x + this.width / 2, y: this.position.y },
+                    velocity: { x: 0, y: -8 },
+                    color: '#FFE81F'
+                }));
+            }
+            if (soundEnabled) laserSynth.triggerAttackRelease('C6', '8n');
+        }
+        takeDamage() {
+            if (this.isInvincible) return;
+            this.lives--;
+            if (soundEnabled) damageSynth.triggerAttackRelease('C3', '16n');
+            this.isInvincible = true;
+            setTimeout(() => {
+                this.isInvincible = false;
+            }, 1500);
+            updateLivesDisplay();
+            if (this.lives <= 0) {
+                gameOver();
+            }
+        }
+    }
+
+    // --- Projectile Class ---
+    class Projectile {
+        constructor({ position, velocity, color }) {
+            this.position = { ...position };
+            this.velocity = { ...velocity };
+            this.radius = 5;
+            this.color = color;
+        }
+        draw() {
+            ctx.beginPath();
+            ctx.arc(this.position.x, this.position.y, this.radius, 0, Math.PI * 2);
+            ctx.fillStyle = this.color;
+            ctx.shadowColor = this.color;
+            ctx.shadowBlur = 8;
+            ctx.fill();
+            ctx.closePath();
+        }
+        update() {
+            this.position.x += this.velocity.x;
+            this.position.y += this.velocity.y;
+            this.draw();
+        }
+    }
+
+    // --- Enemy Class ---
+    class Enemy {
+        constructor({ position, velocity, type }) {
+            this.position = { ...position };
+            this.velocity = { ...velocity };
+            this.width = 48;
+            this.height = 48;
+            this.type = type; // Could be used for different enemies
+            this.color = '#ff0000';
+            this.image = new Image();
+            this.image.src = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2NCIgaGVpZ2h0PSI0OCIgdmlld0JveD0iMCAwIDY0IDQ4Ij48cGF0aCBkPSJNMTYgMTh2MjBjMCAxLjQgMS42IDIgMi4yIDEuMSAxLjgtMi41IDYuOC01LjQgMTItNSA1LjIgMCA5IDMuMiAxMiA2LjUgLjQgMS41IDIuMSAyIDIgM3YxNGgxMmwwLTE0YzAtMS0xLjUtMi0yLTMtNC0zLjYtNy0xMC4xLTExLTE1LjZ2LTUuOHoiIGZpbGw9IiNmZjAwMDAiLz48L3N2Zz4=';
+        }
+        draw() {
+            ctx.drawImage(this.image, this.position.x, this.position.y, this.width, this.height);
+        }
+        update() {
+            this.position.x += this.velocity.x;
+            this.position.y += this.velocity.y;
+            this.draw();
+        }
+    }
+
+    // --- Utility functions ---
+    function createEnemy() {
+        const x = Math.random() * (canvas.width - 48);
+        const y = -50;
+        const speed = baseEnemySpeed + Math.random() * 1.5;
+        enemies.push(new Enemy({
+            position: { x, y },
+            velocity: { x: 0, y: speed },
+            type: 'basic',
+        }));
+    }
+
+    function updateScoreDisplay() {
+        scoreEl.textContent = score;
+    }
+
+    function updateLivesDisplay() {
+        livesContainer.innerHTML = 'LIVES:';
+        for (let i = 0; i < player.lives; i++) {
+            const life = document.createElement('span');
+            life.classList.add('life');
+            livesContainer.appendChild(life);
+        }
+    }
+
+    // --- Game Logic ---
+    const player = new Player();
+
+    function resetGame() {
+        score = 0;
+        enemies = [];
+        projectiles = [];
+        player.lives = 3;
+        player.position.x = canvas.width / 2 - player.width / 2;
+        updateScoreDisplay();
+        updateLivesDisplay();
+    }
+
+    function gameOver() {
+        cancelAnimationFrame(animationId);
+        clearInterval(enemySpawnIntervalId);
+        modalScore.textContent = score;
+        modalEl.classList.remove('hidden');
+        gameRunning = false;
+    }
+
+    function startGame() {
+        if (!soundEnabled) {
+            Tone.start();
+            soundEnabled = true;
+        }
+        resetGame();
+        modalEl.classList.add('hidden');
+        gameRunning = true;
+        enemySpawnIntervalId = setInterval(() => {
+            createEnemy();
+        }, baseSpawnInterval);
+
+        animate();
+    }
+
+    function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        player.update();
+
+        // Update projectiles
+        for (let i = projectiles.length - 1; i >= 0; i--) {
+            const proj = projectiles[i];
+            proj.update();
+
+            // Remove projectiles off screen
+            if (proj.position.y + proj.radius < 0 || proj.position.x < 0 || proj.position.x > canvas.width) {
+                projectiles.splice(i, 1);
+            }
+        }
+
+        // Update enemies
+        for (let i = enemies.length - 1; i >= 0; i--) {
+            const enemy = enemies[i];
+            enemy.update();
+
+            // Remove enemies off bottom
+            if (enemy.position.y > canvas.height) {
+                enemies.splice(i, 1);
+                player.takeDamage();
+            }
+        }
+
+        // Collision detection
+        for (let i = enemies.length - 1; i >= 0; i--) {
+            const enemy = enemies[i];
+            // Check collision with player
+            if (!player.isInvincible &&
+                enemy.position.x < player.position.x + player.width &&
+                enemy.position.x + enemy.width > player.position.x &&
+                enemy.position.y < player.position.y + player.height &&
+                enemy.position.y + enemy.height > player.position.y) {
+                enemies.splice(i, 1);
+                player.takeDamage();
+                if (soundEnabled) explosionSynth.triggerAttackRelease('16n');
+                continue;
+            }
+
+            // Check collision with projectiles
+            for (let j = projectiles.length - 1; j >= 0; j--) {
+                const proj = projectiles[j];
+                if (proj.position.x > enemy.position.x &&
+                    proj.position.x < enemy.position.x + enemy.width &&
+                    proj.position.y > enemy.position.y &&
+                    proj.position.y < enemy.position.y + enemy.height) {
+                    enemies.splice(i, 1);
+                    projectiles.splice(j, 1);
+                    score += 10;
+                    updateScoreDisplay();
+                    if (soundEnabled) explosionSynth.triggerAttackRelease('16n');
+                    break;
+                }
+            }
+        }
+
+        if (gameRunning) {
+            animationId = requestAnimationFrame(animate);
+        }
+    }
+
+    // --- Input Handling ---
+    window.addEventListener('keydown', (e) => {
+        if (!gameRunning) return;
+        if (e.repeat) return;
+        if (e.code === 'ArrowLeft' || e.key.toLowerCase() === 'a') {
+            player.velocity.x = -6;
+        } else if (e.code === 'ArrowRight' || e.key.toLowerCase() === 'd') {
+            player.velocity.x = 6;
+        } else if (e.code === 'Space') {
+            player.shoot();
+        }
+    });
+    window.addEventListener('keyup', (e) => {
+        if (e.code === 'ArrowLeft' || e.key.toLowerCase() === 'a') {
+            if (player.velocity.x < 0) player.velocity.x = 0;
+        } else if (e.code === 'ArrowRight' || e.key.toLowerCase() === 'd') {
+            if (player.velocity.x > 0) player.velocity.x = 0;
+        }
+    });
+
+    // --- Start Button ---
+    startGameBtn.addEventListener('click', startGame);
+
+    // Show modal on load
+    modalEl.classList.remove('hidden');
+
+</script>
+</body>
+</html>
 
