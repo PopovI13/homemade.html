@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Star Wars Shooter Fullscreen - Faster & More Bonuses</title>
+<title>Star Wars Shooter Fullscreen - Bonuses Update</title>
 <style>
   body {
     margin: 0;
@@ -47,6 +47,7 @@
     cursor: pointer;
     user-select: none;
     z-index: 10;
+    white-space: nowrap;
   }
   #startBtn:hover {
     background: #005f99;
@@ -89,7 +90,7 @@
         x: Math.random() * width,
         y: Math.random() * height,
         radius: Math.random() * 1.3 + 0.2,
-        speed: Math.random() * 0.9 + 0.4, // a bit faster stars
+        speed: Math.random() * 0.9 + 0.4,
         opacity: Math.random() * 0.8 + 0.2
       });
     }
@@ -116,13 +117,18 @@
       this.height = 40;
       this.x = width / 2 - this.width / 2;
       this.y = height - this.height - 10;
-      this.speed = 14; // faster player
+      this.speed = 14;
       this.moveLeft = false;
       this.moveRight = false;
       this.canShoot = true;
-      this.shootCooldown = 10; // faster shooting
+      this.shootCooldown = 10;
       this.shootTimer = 0;
       this.color = '#00bfff'; // blueish
+
+      // NEW: Bonuses states
+      this.tripleShotActive = false;
+      this.tripleShotDuration = 0;
+      this.shieldActive = false;
     }
     update() {
       if (this.moveLeft && this.x > 0) this.x -= this.speed;
@@ -135,9 +141,28 @@
           this.canShoot = true;
         }
       }
+
+      // Decrease triple shot timer
+      if (this.tripleShotActive) {
+        this.tripleShotDuration--;
+        if (this.tripleShotDuration <= 0) {
+          this.tripleShotActive = false;
+        }
+      }
     }
     draw() {
       ctx.save();
+      // Draw shield if active
+      if (this.shieldActive) {
+        ctx.strokeStyle = '#00ffdd';
+        ctx.lineWidth = 6;
+        ctx.shadowColor = '#00ffdd';
+        ctx.shadowBlur = 25;
+        ctx.beginPath();
+        ctx.ellipse(this.x + this.width / 2, this.y + this.height / 2, this.width * 0.8, this.height * 1.2, 0, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+
       ctx.fillStyle = '#00bfff';
       ctx.shadowColor = '#00bfff';
       ctx.shadowBlur = 20;
@@ -157,28 +182,37 @@
       ctx.restore();
     }
     shoot() {
-      if (this.canShoot) {
+      if (!this.canShoot) return;
+
+      if (this.tripleShotActive) {
         bullets.push(new Bullet(this.x + this.width / 2, this.y));
-        this.canShoot = false;
-        this.shootTimer = 0;
+        bullets.push(new Bullet(this.x + this.width / 2 - 15, this.y + 10, -4)); // left offset with angle
+        bullets.push(new Bullet(this.x + this.width / 2 + 15, this.y + 10, 4));  // right offset with angle
+      } else {
+        bullets.push(new Bullet(this.x + this.width / 2, this.y));
       }
+
+      this.canShoot = false;
+      this.shootTimer = 0;
     }
   }
 
   // --- Player Bullet (blue laser beam) ---
   class Bullet {
-    constructor(x, y) {
+    constructor(x, y, xVel = 0) {
       this.x = x;
       this.y = y;
       this.width = 4;
       this.height = 18;
-      this.speed = 28; // faster bullet
-      this.color = '#00bfff'; // blue laser
+      this.speed = 28;
+      this.color = '#00bfff';
+      this.xVel = xVel; // for triple shot side bullets
       this.active = true;
     }
     update() {
       this.y -= this.speed;
-      if (this.y + this.height < 0) this.active = false;
+      this.x += this.xVel; // side movement for triple shot bullets
+      if (this.y + this.height < 0 || this.x < 0 || this.x > width) this.active = false;
     }
     draw() {
       ctx.save();
@@ -195,7 +229,7 @@
     constructor(x, y, speedMultiplier = 1, canShoot = false) {
       this.x = x;
       this.y = y;
-      this.speed = 2.5 * speedMultiplier; // faster enemy
+      this.speed = 2.5 * speedMultiplier;
       this.canShoot = canShoot;
       this.type = Math.random() < 0.5 ? 'tie' : 'starDestroyer';
       this.width = this.type === 'tie' ? 40 : 70;
@@ -204,7 +238,7 @@
       this.active = true;
       this.blinkTimer = 0;
 
-      this.shootCooldown = canShoot ? 100 : Infinity; // faster shooting
+      this.shootCooldown = canShoot ? 100 : Infinity;
       this.shootTimer = 0;
     }
     update() {
@@ -281,16 +315,16 @@
         ctx.arc(0, 0, 10, 0, Math.PI * 2);
         ctx.fill();
         ctx.strokeStyle = '#4444aa';
-        ctx.lineWidth = 3;
+        ctx.lineWidth = 2;
         ctx.stroke();
 
         ctx.beginPath();
-        ctx.rect(-25, -15, 10, 30);
+        ctx.rect(-30, -18, 12, 36);
         ctx.fill();
         ctx.stroke();
 
         ctx.beginPath();
-        ctx.rect(15, -15, 10, 30);
+        ctx.rect(18, -18, 12, 36);
         ctx.fill();
         ctx.stroke();
       } else if (this.type === 'starDestroyer') {
@@ -306,20 +340,14 @@
         ctx.stroke();
 
         ctx.fillStyle = '#fff';
-        for (let i = -20; i <= 20; i += 10) {
-          ctx.fillRect(i, 5, 3, 4);
+        for (let i = -22; i <= 22; i += 11) {
+          ctx.fillRect(i, -12, 4, 5);
         }
       }
+
       ctx.globalAlpha = 1;
       ctx.shadowBlur = 0;
       ctx.restore();
-    }
-    draw() {
-      if (this.canShoot) {
-        this.drawFront();
-      } else {
-        this.drawBack();
-      }
     }
   }
 
@@ -329,9 +357,9 @@
       this.x = x;
       this.y = y;
       this.width = 5;
-      this.height = 15;
-      this.speed = 13; // faster enemy bullet
-      this.color = '#ff3300'; // red laser
+      this.height = 12;
+      this.speed = 13;
+      this.color = '#ff6600';
       this.active = true;
     }
     update() {
@@ -348,46 +376,71 @@
     }
   }
 
-  // --- Bonus (extra life) ---
+  // --- Bonuses ---
+  // Types: 'life', 'tripleShot', 'shield'
   class Bonus {
-    constructor(x, y) {
+    constructor(x, y, type) {
       this.x = x;
       this.y = y;
       this.width = 30;
       this.height = 30;
-      this.speed = 4.5; // faster bonus drop
+      this.speed = 5;
       this.active = true;
-      this.color = '#00ff99';
+      this.type = type;
       this.blinkTimer = 0;
     }
     update() {
       this.y += this.speed;
       if (this.y > height) this.active = false;
-      this.blinkTimer += 0.08;
+      this.blinkTimer += 0.1;
     }
     draw() {
       ctx.save();
-      ctx.fillStyle = this.color;
-      ctx.shadowColor = this.color;
-      ctx.shadowBlur = 20;
-      ctx.globalAlpha = 0.7 + 0.3 * Math.sin(this.blinkTimer * 10);
+      ctx.shadowBlur = 15;
 
-      ctx.beginPath();
-      ctx.moveTo(this.x + this.width / 2, this.y);
-      ctx.lineTo(this.x + this.width * 0.75, this.y + this.height);
-      ctx.lineTo(this.x + this.width * 0.25, this.y + this.height);
-      ctx.closePath();
-      ctx.fill();
+      if (this.type === 'life') {
+        ctx.fillStyle = '#00ff99';
+        ctx.shadowColor = '#00ff99';
 
-      ctx.beginPath();
-      ctx.moveTo(this.x + this.width * 0.15, this.y + this.height * 0.5);
-      ctx.lineTo(this.x + this.width * 0.85, this.y + this.height * 0.5);
-      ctx.lineTo(this.x + this.width * 0.5, this.y + this.height * 0.9);
-      ctx.closePath();
-      ctx.fill();
+        ctx.beginPath();
+        // Heart shape
+        let topCurveHeight = this.height * 0.3;
+        ctx.moveTo(this.x + this.width / 2, this.y + this.height * 0.9);
+        ctx.bezierCurveTo(this.x + this.width / 2 + this.width / 2, this.y + this.height * 0.6, this.x + this.width / 2 + this.width / 4, this.y + this.height * 0.1, this.x + this.width / 2, this.y + topCurveHeight);
+        ctx.bezierCurveTo(this.x + this.width / 2 - this.width / 4, this.y + this.height * 0.1, this.x + this.width / 2 - this.width / 2, this.y + this.height * 0.6, this.x + this.width / 2, this.y + this.height * 0.9);
+        ctx.closePath();
+        ctx.fill();
+      } else if (this.type === 'tripleShot') {
+        ctx.fillStyle = '#0099ff';
+        ctx.shadowColor = '#0099ff';
 
-      ctx.globalAlpha = 1;
-      ctx.shadowBlur = 0;
+        // Draw three upward arrows representing triple shot
+        let centerX = this.x + this.width / 2;
+        let centerY = this.y + this.height / 2;
+
+        for (let i = -1; i <= 1; i++) {
+          ctx.beginPath();
+          ctx.moveTo(centerX + i * 10, centerY + 12);
+          ctx.lineTo(centerX + i * 10 - 6, centerY - 10);
+          ctx.lineTo(centerX + i * 10 + 6, centerY - 10);
+          ctx.closePath();
+          ctx.fill();
+        }
+      } else if (this.type === 'shield') {
+        ctx.fillStyle = '#00ffff';
+        ctx.shadowColor = '#00ffff';
+
+        // Draw shield shape (circle with glow)
+        ctx.beginPath();
+        ctx.ellipse(this.x + this.width / 2, this.y + this.height / 2, this.width * 0.4, this.height * 0.55, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.fillStyle = '#008888';
+        ctx.ellipse(this.x + this.width / 2, this.y + this.height / 2 + 3, this.width * 0.3, this.height * 0.4, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
       ctx.restore();
     }
   }
@@ -398,12 +451,11 @@
       this.x = x;
       this.y = y;
       this.radius = 5;
-      this.maxRadius = 40;
       this.alpha = 1;
       this.active = true;
     }
     update() {
-      this.radius += 2.8; // faster explosion
+      this.radius += 3.2;
       this.alpha -= 0.07;
       if (this.alpha <= 0) this.active = false;
     }
@@ -453,7 +505,7 @@
 
   // --- Spawn enemies ---
   let enemySpawnTimer = 0;
-  let enemySpawnInterval = 50; // faster spawning
+  const enemySpawnInterval = 50;
 
   function spawnEnemy() {
     let x = Math.random() * (width - 70);
@@ -464,11 +516,16 @@
 
   // --- Spawn bonuses ---
   let bonusSpawnTimer = 0;
-  let bonusSpawnInterval = 180; // more bonuses, faster spawn
+  const bonusSpawnInterval = 120; // more frequent bonuses now
 
   function spawnBonus() {
     let x = Math.random() * (width - 30);
-    bonuses.push(new Bonus(x, -30));
+    let typeRand = Math.random();
+    let type;
+    if (typeRand < 0.4) type = 'life';
+    else if (typeRand < 0.7) type = 'tripleShot';
+    else type = 'shield';
+    bonuses.push(new Bonus(x, -30, type));
   }
 
   // --- Game loop ---
@@ -491,7 +548,6 @@
       e.drawBack();
     });
 
-    // Draw enemies with front when shooting
     enemies.forEach(e => {
       if (e.canShoot && e.shootTimer < 10) {
         e.drawFront();
@@ -545,7 +601,7 @@
           explosions.push(new Explosion(e.x + e.width / 2, e.y + e.height / 2));
           // 20% chance to drop bonus on enemy death
           if (Math.random() < 0.2) {
-            bonuses.push(new Bonus(e.x + e.width / 2, e.y + e.height / 2));
+            spawnBonus();
           }
         }
       });
@@ -561,10 +617,16 @@
         )
       ) {
         eb.active = false;
-        lives--;
-        explosions.push(new Explosion(player.x + player.width / 2, player.y + player.height / 2));
-        if (lives <= 0) {
-          gameOver();
+
+        // Shield absorbs one hit if active
+        if (player.shieldActive) {
+          player.shieldActive = false;
+        } else {
+          lives--;
+          explosions.push(new Explosion(player.x + player.width / 2, player.y + player.height / 2));
+          if (lives <= 0) {
+            gameOver();
+          }
         }
       }
     });
@@ -579,10 +641,14 @@
         )
       ) {
         e.active = false;
-        lives--;
-        explosions.push(new Explosion(player.x + player.width / 2, player.y + player.height / 2));
-        if (lives <= 0) {
-          gameOver();
+        if (player.shieldActive) {
+          player.shieldActive = false;
+        } else {
+          lives--;
+          explosions.push(new Explosion(player.x + player.width / 2, player.y + player.height / 2));
+          if (lives <= 0) {
+            gameOver();
+          }
         }
       }
     });
@@ -597,7 +663,14 @@
         )
       ) {
         bonus.active = false;
-        lives++;
+        if (bonus.type === 'life') {
+          lives++;
+        } else if (bonus.type === 'tripleShot') {
+          player.tripleShotActive = true;
+          player.tripleShotDuration = 600; // 10 seconds at 60fps
+        } else if (bonus.type === 'shield') {
+          player.shieldActive = true;
+        }
       }
     });
 
@@ -610,27 +683,28 @@
 
   function gameOver() {
     gameRunning = false;
-    startBtn.textContent = `GAME OVER - SCORE: ${score}\nCLICK TO RESTART`;
+    startBtn.textContent = `GAME OVER! SCORE: ${score} - RESTART?`;
     startBtn.style.display = 'block';
   }
 
   function startGame() {
-    gameRunning = true;
-    score = 0;
-    lives = 3;
+    // Reset everything
+    player = new Player();
     bullets = [];
     enemies = [];
     enemyBullets = [];
     explosions = [];
     bonuses = [];
-    player = new Player();
+    score = 0;
+    lives = 3;
+    enemySpawnTimer = 0;
+    bonusSpawnTimer = 0;
+    gameRunning = true;
     startBtn.style.display = 'none';
     gameLoop();
   }
 
-  startBtn.addEventListener('click', () => {
-    startGame();
-  });
+  startBtn.addEventListener('click', startGame);
 
   window.addEventListener('resize', () => {
     width = window.innerWidth;
