@@ -3,125 +3,143 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Starfield Animation</title>
+  <title>Colorful Particle Explosion</title>
   <style>
     body, html {
-      margin: 0;
-      padding: 0;
+      margin: 0; padding: 0;
       overflow: hidden;
-      background-color: black;
+      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
       height: 100vh;
       display: flex;
+      flex-direction: column;
       justify-content: center;
       align-items: center;
       color: white;
-      font-family: Arial, sans-serif;
-      flex-direction: column;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       text-align: center;
     }
     canvas {
-      display: block;
       position: absolute;
       top: 0; left: 0;
       width: 100vw;
       height: 100vh;
+      display: block;
       z-index: -1;
     }
     h1 {
-      margin-top: 30px;
-      font-size: 2.5rem;
-      color: #00ccff;
-      text-shadow: 0 0 10px #00ccff;
+      font-size: 3rem;
+      margin-bottom: 10px;
+      text-shadow: 0 0 10px rgba(255,255,255,0.7);
     }
     p {
-      margin: 10px 0 30px;
       font-size: 1.2rem;
-      color: #aaa;
+      margin-bottom: 30px;
+      text-shadow: 0 0 5px rgba(0,0,0,0.7);
     }
     a.back-link {
-      color: #00ccff;
+      position: relative;
+      z-index: 10;
+      color: #a1c4fd;
       text-decoration: none;
       font-weight: bold;
-      border: 2px solid #00ccff;
-      padding: 8px 16px;
-      border-radius: 6px;
+      font-size: 1.1rem;
+      border: 2px solid #a1c4fd;
+      padding: 10px 20px;
+      border-radius: 8px;
       transition: background-color 0.3s ease, color 0.3s ease;
     }
     a.back-link:hover {
-      background-color: #00ccff;
-      color: black;
+      background-color: #a1c4fd;
+      color: #0f2027;
     }
   </style>
 </head>
 <body>
 
-  <h1>Starfield Animation</h1>
-  <p>A simple animated starfield made with HTML5 Canvas and JavaScript.</p>
-
+  <h1>Colorful Particle Explosion</h1>
+  <p>Click anywhere to create an explosion of colorful particles!</p>
   <a href="cool-projects.html" class="back-link">← Back to Cool Projects</a>
 
-  <canvas id="starfield"></canvas>
+  <canvas id="canvas"></canvas>
 
   <script>
-    const canvas = document.getElementById('starfield');
+    const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
-    let width, height;
 
-    // Resize canvas to fill the screen
+    let width, height;
     function resize() {
       width = window.innerWidth;
       height = window.innerHeight;
       canvas.width = width;
       canvas.height = height;
     }
-
     window.addEventListener('resize', resize);
     resize();
 
-    // Star constructor
-    function Star() {
-      this.x = Math.random() * width;
-      this.y = Math.random() * height;
-      this.z = Math.random() * width;
-      this.size = Math.random() * 1.5 + 0.5;
-    }
+    class Particle {
+      constructor(x, y, color) {
+        this.x = x;
+        this.y = y;
+        this.size = Math.random() * 5 + 2;
+        this.color = color;
+        this.speedX = (Math.random() - 0.5) * 8;
+        this.speedY = (Math.random() - 0.5) * 8;
+        this.gravity = 0.15;
+        this.opacity = 1;
+        this.life = 60; // frames
+      }
 
-    Star.prototype.update = function() {
-      this.z -= 4;
-      if (this.z <= 0) {
-        this.x = Math.random() * width;
-        this.y = Math.random() * height;
-        this.z = width;
-        this.size = Math.random() * 1.5 + 0.5;
+      update() {
+        this.speedY += this.gravity;
+        this.x += this.speedX;
+        this.y += this.speedY;
+        this.opacity -= 1 / this.life;
+        this.size *= 0.96; // shrink over time
+        this.life--;
+      }
+
+      draw() {
+        ctx.save();
+        ctx.globalAlpha = this.opacity;
+        ctx.beginPath();
+        ctx.fillStyle = this.color;
+        ctx.shadowColor = this.color;
+        ctx.shadowBlur = 10;
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
       }
     }
 
-    Star.prototype.draw = function() {
-      const sx = (this.x - width / 2) * (width / this.z) + width / 2;
-      const sy = (this.y - height / 2) * (width / this.z) + height / 2;
-      const radius = this.size * (width / this.z);
-      ctx.beginPath();
-      ctx.arc(sx, sy, radius, 0, 2 * Math.PI);
-      ctx.fillStyle = 'white';
-      ctx.fill();
+    const particles = [];
+
+    function randomColor() {
+      const colors = ['#ff6b6b', '#feca57', '#48dbfb', '#1dd1a1', '#5f27cd', '#c8d6e5', '#ff9ff3', '#00d2d3'];
+      return colors[Math.floor(Math.random() * colors.length)];
     }
 
-    // Create stars
-    const stars = [];
-    const numStars = 400;
-    for (let i = 0; i < numStars; i++) {
-      stars.push(new Star());
-    }
+    canvas.addEventListener('click', (e) => {
+      const x = e.clientX;
+      const y = e.clientY;
+      const count = 50;
 
-    // Animation loop
+      for (let i = 0; i < count; i++) {
+        particles.push(new Particle(x, y, randomColor()));
+      }
+    });
+
     function animate() {
-      ctx.fillStyle = 'black';
-      ctx.fillRect(0, 0, width, height);
+      ctx.clearRect(0, 0, width, height);
 
-      stars.forEach(star => {
-        star.update();
-        star.draw();
-      });
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.update();
+        p.draw();
+
+        if (p.opacity <= 0 || p.size <= 0.5) {
+          particles.splice(i, 1);
+        }
+      }
 
       requestAnimationFrame(animate);
     }
@@ -131,4 +149,3 @@
 
 </body>
 </html>
-
