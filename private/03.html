@@ -1,1 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Starfield Animation</title>
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background-color: black;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: white;
+      font-family: Arial, sans-serif;
+      flex-direction: column;
+      text-align: center;
+    }
+    canvas {
+      display: block;
+      position: absolute;
+      top: 0; left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: -1;
+    }
+    h1 {
+      margin-top: 30px;
+      font-size: 2.5rem;
+      color: #00ccff;
+      text-shadow: 0 0 10px #00ccff;
+    }
+    p {
+      margin: 10px 0 30px;
+      font-size: 1.2rem;
+      color: #aaa;
+    }
+    a.back-link {
+      color: #00ccff;
+      text-decoration: none;
+      font-weight: bold;
+      border: 2px solid #00ccff;
+      padding: 8px 16px;
+      border-radius: 6px;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+    a.back-link:hover {
+      background-color: #00ccff;
+      color: black;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Starfield Animation</h1>
+  <p>A simple animated starfield made with HTML5 Canvas and JavaScript.</p>
+
+  <a href="cool-projects.html" class="back-link">← Back to Cool Projects</a>
+
+  <canvas id="starfield"></canvas>
+
+  <script>
+    const canvas = document.getElementById('starfield');
+    const ctx = canvas.getContext('2d');
+    let width, height;
+
+    // Resize canvas to fill the screen
+    function resize() {
+      width = window.innerWidth;
+      height = window.innerHeight;
+      canvas.width = width;
+      canvas.height = height;
+    }
+
+    window.addEventListener('resize', resize);
+    resize();
+
+    // Star constructor
+    function Star() {
+      this.x = Math.random() * width;
+      this.y = Math.random() * height;
+      this.z = Math.random() * width;
+      this.size = Math.random() * 1.5 + 0.5;
+    }
+
+    Star.prototype.update = function() {
+      this.z -= 4;
+      if (this.z <= 0) {
+        this.x = Math.random() * width;
+        this.y = Math.random() * height;
+        this.z = width;
+        this.size = Math.random() * 1.5 + 0.5;
+      }
+    }
+
+    Star.prototype.draw = function() {
+      const sx = (this.x - width / 2) * (width / this.z) + width / 2;
+      const sy = (this.y - height / 2) * (width / this.z) + height / 2;
+      const radius = this.size * (width / this.z);
+      ctx.beginPath();
+      ctx.arc(sx, sy, radius, 0, 2 * Math.PI);
+      ctx.fillStyle = 'white';
+      ctx.fill();
+    }
+
+    // Create stars
+    const stars = [];
+    const numStars = 400;
+    for (let i = 0; i < numStars; i++) {
+      stars.push(new Star());
+    }
+
+    // Animation loop
+    function animate() {
+      ctx.fillStyle = 'black';
+      ctx.fillRect(0, 0, width, height);
+
+      stars.forEach(star => {
+        star.update();
+        star.draw();
+      });
+
+      requestAnimationFrame(animate);
+    }
+
+    animate();
+  </script>
+
+</body>
+</html>
 
