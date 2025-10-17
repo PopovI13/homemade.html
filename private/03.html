@@ -3,61 +3,82 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Colorful Particle Explosion</title>
+  <title>Epic Colorful Particle Explosion</title>
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700&display=swap');
+
     body, html {
       margin: 0; padding: 0;
       overflow: hidden;
-      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+      background: linear-gradient(270deg, #0f2027, #203a43, #2c5364, #0f2027);
+      background-size: 800% 800%;
+      animation: gradientBG 20s ease infinite;
       height: 100vh;
       display: flex;
       flex-direction: column;
       justify-content: center;
       align-items: center;
       color: white;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      font-family: 'Orbitron', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       text-align: center;
+      user-select: none;
     }
+
+    @keyframes gradientBG {
+      0% {background-position:0% 50%;}
+      50% {background-position:100% 50%;}
+      100% {background-position:0% 50%;}
+    }
+
     canvas {
-      position: absolute;
+      position: fixed;
       top: 0; left: 0;
       width: 100vw;
       height: 100vh;
       display: block;
       z-index: -1;
+      filter: drop-shadow(0 0 4px rgba(255,255,255,0.7));
     }
+
     h1 {
-      font-size: 3rem;
+      font-size: 3.5rem;
       margin-bottom: 10px;
-      text-shadow: 0 0 10px rgba(255,255,255,0.7);
+      text-shadow: 0 0 15px #00fff7, 0 0 25px #00fff7;
     }
+
     p {
-      font-size: 1.2rem;
+      font-size: 1.3rem;
       margin-bottom: 30px;
-      text-shadow: 0 0 5px rgba(0,0,0,0.7);
+      letter-spacing: 1.2px;
+      text-shadow: 0 0 10px rgba(0,0,0,0.7);
     }
+
     a.back-link {
       position: relative;
       z-index: 10;
-      color: #a1c4fd;
+      color: #00fff7;
       text-decoration: none;
-      font-weight: bold;
+      font-weight: 700;
       font-size: 1.1rem;
-      border: 2px solid #a1c4fd;
-      padding: 10px 20px;
-      border-radius: 8px;
+      border: 2px solid #00fff7;
+      padding: 12px 26px;
+      border-radius: 12px;
       transition: background-color 0.3s ease, color 0.3s ease;
+      letter-spacing: 1px;
+      user-select: none;
     }
+
     a.back-link:hover {
-      background-color: #a1c4fd;
+      background-color: #00fff7;
       color: #0f2027;
+      box-shadow: 0 0 15px #00fff7;
     }
   </style>
 </head>
 <body>
 
-  <h1>Colorful Particle Explosion</h1>
-  <p>Click anywhere to create an explosion of colorful particles!</p>
+  <h1>Epic Particle Explosion</h1>
+  <p>Click or move your mouse to unleash swirling colorful particles!</p>
   <a href="cool-projects.html" class="back-link">← Back to Cool Projects</a>
 
   <canvas id="canvas"></canvas>
@@ -65,8 +86,8 @@
   <script>
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
-
     let width, height;
+
     function resize() {
       width = window.innerWidth;
       height = window.innerHeight;
@@ -76,67 +97,112 @@
     window.addEventListener('resize', resize);
     resize();
 
+    // Utility: HSL color interpolation for smooth glow
+    function lerp(a, b, t) {
+      return a + (b - a) * t;
+    }
+
     class Particle {
-      constructor(x, y, color) {
+      constructor(x, y, colorHue) {
         this.x = x;
         this.y = y;
-        this.size = Math.random() * 5 + 2;
-        this.color = color;
-        this.speedX = (Math.random() - 0.5) * 8;
-        this.speedY = (Math.random() - 0.5) * 8;
-        this.gravity = 0.15;
-        this.opacity = 1;
-        this.life = 60; // frames
+        this.originX = x;
+        this.originY = y;
+        this.size = Math.random() * 5 + 3;
+        this.angle = Math.random() * Math.PI * 2;
+        this.radius = Math.random() * 100 + 50;
+        this.speed = 0.02 + Math.random() * 0.02;
+        this.colorHue = colorHue;
+        this.alpha = 1;
+        this.life = 100 + Math.random() * 100;
+        this.vx = (Math.random() - 0.5) * 8;
+        this.vy = (Math.random() - 0.5) * 8;
+        this.orbiting = false;
       }
 
       update() {
-        this.speedY += this.gravity;
-        this.x += this.speedX;
-        this.y += this.speedY;
-        this.opacity -= 1 / this.life;
-        this.size *= 0.96; // shrink over time
+        if (!this.orbiting) {
+          // Initial explosion movement with friction
+          this.x += this.vx;
+          this.y += this.vy;
+          this.vx *= 0.95;
+          this.vy *= 0.95;
+
+          if (Math.abs(this.vx) < 0.1 && Math.abs(this.vy) < 0.1) {
+            this.orbiting = true;
+            this.angle = Math.random() * Math.PI * 2;
+          }
+        } else {
+          // Orbit around origin point
+          this.angle += this.speed;
+          this.x = this.originX + Math.cos(this.angle) * this.radius;
+          this.y = this.originY + Math.sin(this.angle) * this.radius;
+        }
+
         this.life--;
+        this.alpha = Math.max(0, this.life / 200);
+        this.size *= 0.97;
       }
 
       draw() {
+        const glow = 10 + 10 * Math.sin(this.colorHue * 0.1 + Date.now() * 0.01);
         ctx.save();
-        ctx.globalAlpha = this.opacity;
+        ctx.globalAlpha = this.alpha;
+        ctx.shadowColor = `hsl(${this.colorHue}, 100%, 75%)`;
+        ctx.shadowBlur = glow;
+        ctx.fillStyle = `hsl(${this.colorHue}, 100%, 60%)`;
         ctx.beginPath();
-        ctx.fillStyle = this.color;
-        ctx.shadowColor = this.color;
-        ctx.shadowBlur = 10;
         ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
         ctx.fill();
         ctx.restore();
       }
     }
 
-    const particles = [];
+    let particles = [];
 
-    function randomColor() {
-      const colors = ['#ff6b6b', '#feca57', '#48dbfb', '#1dd1a1', '#5f27cd', '#c8d6e5', '#ff9ff3', '#00d2d3'];
-      return colors[Math.floor(Math.random() * colors.length)];
+    function randomHue() {
+      return Math.floor(Math.random() * 360);
     }
 
-    canvas.addEventListener('click', (e) => {
-      const x = e.clientX;
-      const y = e.clientY;
-      const count = 50;
-
+    function createExplosion(x, y) {
+      const baseHue = randomHue();
+      const count = 80;
       for (let i = 0; i < count; i++) {
-        particles.push(new Particle(x, y, randomColor()));
+        particles.push(new Particle(x, y, (baseHue + i * (360 / count)) % 360));
       }
+    }
+
+    // Mouse interaction
+    let lastMousePos = { x: width / 2, y: height / 2 };
+    canvas.addEventListener('click', e => {
+      createExplosion(e.clientX, e.clientY);
+    });
+
+    canvas.addEventListener('mousemove', e => {
+      const dx = e.clientX - lastMousePos.x;
+      const dy = e.clientY - lastMousePos.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+
+      // Add particles if mouse moves fast enough
+      if (dist > 15) {
+        createExplosion(e.clientX, e.clientY);
+      }
+
+      lastMousePos = { x: e.clientX, y: e.clientY };
     });
 
     function animate() {
-      ctx.clearRect(0, 0, width, height);
+      // Slight trail effect
+      ctx.fillStyle = 'rgba(15, 32, 39, 0.2)';
+      ctx.fillRect(0, 0, width, height);
 
+      // Update & draw particles
       for (let i = particles.length - 1; i >= 0; i--) {
         const p = particles[i];
         p.update();
         p.draw();
 
-        if (p.opacity <= 0 || p.size <= 0.5) {
+        if (p.life <= 0 || p.size < 0.5) {
           particles.splice(i, 1);
         }
       }
