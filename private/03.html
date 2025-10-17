@@ -3,10 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Classic Fireworks</title>
+  <title>Detonate</title>
   <style>
     body, html {
-      margin: 0; padding: 0;
+      margin: 0;
+      padding: 0;
       overflow: hidden;
       background: black;
       height: 100vh;
@@ -15,7 +16,8 @@
 
     canvas {
       position: fixed;
-      top: 0; left: 0;
+      top: 0;
+      left: 0;
       width: 100vw;
       height: 100vh;
       display: block;
@@ -28,7 +30,7 @@
       top: 20px;
       left: 20px;
       z-index: 10;
-      color: #f0e68c; /* khaki-ish */
+      color: #f0e68c;
       text-decoration: none;
       font-weight: 700;
       font-size: 1.1rem;
@@ -38,7 +40,7 @@
       transition: background-color 0.3s ease, color 0.3s ease;
       letter-spacing: 1px;
       user-select: none;
-      background: rgba(0,0,0,0.6);
+      background: rgba(0, 0, 0, 0.6);
       backdrop-filter: blur(6px);
     }
 
@@ -51,163 +53,147 @@
 </head>
 <body>
 
-  <a href="cool-projects.html" class="back-link">← Back to Cool Projects</a>
+<a href="cool-projects.html" class="back-link">← Back to Cool Projects</a>
 
-  <canvas id="canvas"></canvas>
+<canvas id="canvas"></canvas>
 
-  <script>
-    const canvas = document.getElementById('canvas');
-    const ctx = canvas.getContext('2d');
-    let width, height;
+<script>
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d');
+  let width, height;
 
-    function resize() {
-      width = window.innerWidth;
-      height = window.innerHeight;
-      canvas.width = width;
-      canvas.height = height;
-    }
-    window.addEventListener('resize', resize);
-    resize();
+  function resize() {
+    width = window.innerWidth;
+    height = window.innerHeight;
+    canvas.width = width;
+    canvas.height = height;
+  }
+  window.addEventListener('resize', resize);
+  resize();
 
-    // Firework colors palette (classic warm fireworks)
-    const COLORS = [
-      {h: 30, s: 100, l: 55},  // orange
-      {h: 45, s: 100, l: 65},  // yellow
-      {h: 15, s: 100, l: 50},  // reddish orange
-      {h: 0,  s: 100, l: 50},  // red
-      {h: 50, s: 80,  l: 80},  // light yellow (almost white)
-      {h: 40, s: 70,  l: 75},  // pale yellow
-    ];
+  const COLORS = [
+    { h: 30, s: 100, l: 55 },
+    { h: 45, s: 100, l: 65 },
+    { h: 15, s: 100, l: 50 },
+    { h: 0,  s: 100, l: 50 },
+    { h: 50, s: 80,  l: 80 },
+    { h: 40, s: 70,  l: 75 },
+  ];
 
-    class Particle {
-      constructor(x, y, color, sizeMultiplier = 1, radiusMultiplier = 1) {
-        this.x = x;
-        this.y = y;
-        this.originX = x;
-        this.originY = y;
-        this.size = (Math.random() * 4 + 2) * sizeMultiplier;
-        this.angle = Math.random() * Math.PI * 2;
-        this.radius = (Math.random() * 100 + 50) * radiusMultiplier;
-        this.speed = 0.02 + Math.random() * 0.02;
-        this.color = color;
-        this.alpha = 1;
-        this.life = 100 + Math.random() * 100;
-        this.vx = (Math.random() - 0.5) * 8 * sizeMultiplier;
-        this.vy = (Math.random() - 0.5) * 8 * sizeMultiplier;
-        this.orbiting = false;
-      }
-
-      update() {
-        if (!this.orbiting) {
-          this.x += this.vx;
-          this.y += this.vy;
-          this.vx *= 0.95;
-          this.vy *= 0.95;
-
-          if (Math.abs(this.vx) < 0.1 && Math.abs(this.vy) < 0.1) {
-            this.orbiting = true;
-            this.angle = Math.random() * Math.PI * 2;
-          }
-        } else {
-          this.angle += this.speed;
-          this.x = this.originX + Math.cos(this.angle) * this.radius;
-          this.y = this.originY + Math.sin(this.angle) * this.radius;
-        }
-
-        this.life--;
-        this.alpha = Math.max(0, this.life / 200);
-        this.size *= 0.97;
-      }
-
-      draw() {
-        const glow = 8 + 8 * Math.sin(Date.now() * 0.01 + this.x);
-        ctx.save();
-        ctx.globalAlpha = this.alpha;
-        ctx.shadowColor = `hsl(${this.color.h}, ${this.color.s}%, ${this.color.l}%)`;
-        ctx.shadowBlur = glow;
-        ctx.fillStyle = `hsl(${this.color.h}, ${this.color.s}%, ${this.color.l}%)`;
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
-      }
+  class Particle {
+    constructor(x, y, color, size = 4) {
+      this.x = x;
+      this.y = y;
+      this.size = size;
+      this.color = color;
+      this.alpha = 1;
+      this.life = 60 + Math.random() * 40; // fades out in ~2–4 seconds
     }
 
-    let particles = [];
-
-    function randomColor() {
-      return COLORS[Math.floor(Math.random() * COLORS.length)];
+    update() {
+      this.life--;
+      this.alpha = Math.max(0, this.life / 100);
     }
 
-    function createExplosion(x, y, big = false) {
-      const count = big ? 200 : 80;
-      const sizeMul = big ? 1.5 : 1;
-      const radiusMul = big ? 2 : 1;
-      for (let i = 0; i < count; i++) {
-        particles.push(new Particle(x, y, randomColor(), sizeMul, radiusMul));
+    draw() {
+      ctx.save();
+      ctx.globalAlpha = this.alpha;
+      ctx.shadowColor = `hsl(${this.color.h}, ${this.color.s}%, ${this.color.l}%)`;
+      ctx.shadowBlur = 10;
+      ctx.fillStyle = `hsl(${this.color.h}, ${this.color.s}%, ${this.color.l}%)`;
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  let particles = [];
+
+  function randomColor() {
+    return COLORS[Math.floor(Math.random() * COLORS.length)];
+  }
+
+  function createTrail(x, y) {
+    const count = 2 + Math.floor(Math.random() * 2);
+    for (let i = 0; i < count; i++) {
+      particles.push(new Particle(x, y, randomColor(), Math.random() * 3 + 2));
+    }
+  }
+
+  function createExplosion(x, y, big = false) {
+    const count = big ? 200 : 80;
+    for (let i = 0; i < count; i++) {
+      const angle = Math.random() * 2 * Math.PI;
+      const speed = Math.random() * (big ? 6 : 3);
+      const px = x + Math.cos(angle) * speed * 2;
+      const py = y + Math.sin(angle) * speed * 2;
+      particles.push(new Particle(px, py, randomColor(), big ? 5 : 3));
+    }
+  }
+
+  let drawing = false;
+  let lastMouse = { x: 0, y: 0 };
+
+  canvas.addEventListener('mousedown', e => {
+    drawing = true;
+    lastMouse = { x: e.clientX, y: e.clientY };
+
+    // Big explosion after hold
+    holdTimer = setTimeout(() => {
+      if (drawing) {
+        createExplosion(e.clientX, e.clientY, true);
       }
-    }
+    }, 2500);
+  });
 
-    let lastMousePos = { x: width / 2, y: height / 2 };
+  canvas.addEventListener('mouseup', () => {
+    drawing = false;
+    clearTimeout(holdTimer);
+  });
 
-    canvas.addEventListener('click', e => {
-      createExplosion(e.clientX, e.clientY);
-    });
+  canvas.addEventListener('mouseleave', () => {
+    drawing = false;
+    clearTimeout(holdTimer);
+  });
 
-    canvas.addEventListener('mousemove', e => {
-      const dx = e.clientX - lastMousePos.x;
-      const dy = e.clientY - lastMousePos.y;
+  canvas.addEventListener('mousemove', e => {
+    if (drawing) {
+      const dx = e.clientX - lastMouse.x;
+      const dy = e.clientY - lastMouse.y;
       const dist = Math.sqrt(dx * dx + dy * dy);
 
-      if (dist > 15) {
-        createExplosion(e.clientX, e.clientY);
+      if (dist > 2) {
+        createTrail(e.clientX, e.clientY);
+        lastMouse = { x: e.clientX, y: e.clientY };
       }
+    }
+  });
 
-      lastMousePos = { x: e.clientX, y: e.clientY };
-    });
+  let holdTimer;
 
-    // Hold mouse for big explosion
-    let holdTimeout;
-    let isHolding = false;
+  function animate() {
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
+    ctx.fillRect(0, 0, width, height);
 
-    canvas.addEventListener('mousedown', e => {
-      isHolding = true;
-      holdTimeout = setTimeout(() => {
-        if (isHolding) {
-          createExplosion(e.clientX, e.clientY, true);
-        }
-      }, 2500); // 2.5 seconds hold
-    });
-
-    canvas.addEventListener('mouseup', e => {
-      isHolding = false;
-      clearTimeout(holdTimeout);
-    });
-
-    canvas.addEventListener('mouseleave', e => {
-      isHolding = false;
-      clearTimeout(holdTimeout);
-    });
-
-    function animate() {
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
-      ctx.fillRect(0, 0, width, height);
-
-      for (let i = particles.length - 1; i >= 0; i--) {
-        const p = particles[i];
-        p.update();
-        p.draw();
-
-        if (p.life <= 0 || p.size < 0.5) {
-          particles.splice(i, 1);
-        }
+    for (let i = particles.length - 1; i >= 0; i--) {
+      const p = particles[i];
+      p.update();
+      p.draw();
+      if (p.life <= 0) {
+        particles.splice(i, 1);
       }
-
-      requestAnimationFrame(animate);
     }
 
-    animate();
-  </script>
+    requestAnimationFrame(animate);
+  }
+
+  animate();
+</script>
+
+</body>
+</html>
+
 
 </body>
 </html>
