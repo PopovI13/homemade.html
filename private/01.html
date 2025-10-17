@@ -103,7 +103,6 @@
     </div>
   </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
 <script>
 (() => {
   const starCanvas = document.getElementById('starCanvas');
@@ -125,7 +124,6 @@
   const aspectRatio = maxWidth / maxHeight;
 
   function resizeCanvas() {
-    // Resize game canvas
     const screenWidth = window.innerWidth;
     const screenHeight = window.innerHeight;
     if(screenWidth / screenHeight > aspectRatio){
@@ -135,11 +133,9 @@
       canvas.width = screenWidth * 0.9;
       canvas.height = canvas.width / aspectRatio;
     }
-    // Resize star canvas to same size
     starCanvas.width = canvas.width;
     starCanvas.height = canvas.height;
 
-    // Adjust player position after resize (optional)
     if(player) {
       player.y = canvas.height - player.height - 10;
       if(player.x + player.width > canvas.width) player.x = canvas.width - player.width;
@@ -162,8 +158,6 @@
       this.brightnessDirection = Math.random() > 0.5 ? 1 : -1;
     }
     update() {
-      this.y += this.speed;
-      if(this.y > star
       this.y += this.speed;
       if(this.y > starCanvas.height) {
         this.reset();
@@ -358,26 +352,19 @@
       else enemy.draw();
 
       // Check collision with player
-      if(
-        enemy.x < player.x + player.width &&
-        enemy.x + enemy.width > player.x &&
-        enemy.y < player.y + player.height &&
-        enemy.y + enemy.height > player.y
-      ) {
-        enemies.splice(eIdx, 1);
+      if(collideRect(player, enemy)) {
+        enemies.splice(eIdx,1);
         lives--;
         drawLives();
-        if(lives <= 0) gameOver();
+        if(lives <= 0) {
+          gameOver();
+          return;
+        }
       }
 
       // Check collision with bullets
       bullets.forEach((bullet, bIdx) => {
-        if(
-          bullet.x > enemy.x &&
-          bullet.x < enemy.x + enemy.width &&
-          bullet.y > enemy.y &&
-          bullet.y < enemy.y + enemy.height
-        ) {
+        if(collideCircleRect(bullet, enemy)) {
           enemies.splice(eIdx, 1);
           bullets.splice(bIdx, 1);
           score += 10;
@@ -391,20 +378,45 @@
     requestAnimationFrame(gameLoop);
   }
 
-  // Controls
+  // Collision helpers
+  function collideRect(a, b) {
+    return a.x < b.x + b.width &&
+           a.x + a.width > b.x &&
+           a.y < b.y + b.height &&
+           a.y + a.height > b.y;
+  }
+
+  function collideCircleRect(circle, rect) {
+    const distX = Math.abs(circle.x - rect.x - rect.width/2);
+    const distY = Math.abs(circle.y - rect.y - rect.height/2);
+
+    if(distX > (rect.width/2 + circle.radius)) return false;
+    if(distY > (rect.height/2 + circle.radius)) return false;
+
+    if(distX <= rect.width/2) return true;
+    if(distY <= rect.height/2) return true;
+
+    const dx = distX - rect.width/2;
+    const dy = distY - rect.height/2;
+    return (dx*dx + dy*dy <= circle.radius*circle.radius);
+  }
+
+  // Input handling
   window.addEventListener('keydown', e => {
-    if(e.key === 'ArrowLeft' || e.key.toLowerCase() === 'a') player.moveLeft = true;
-    if(e.key === 'ArrowRight' || e.key.toLowerCase() === 'd') player.moveRight = true;
-    if(e.key === ' ' || e.key === 'Spacebar') {
+    if(e.code === 'ArrowLeft' || e.code === 'KeyA') player.moveLeft = true;
+    if(e.code === 'ArrowRight' || e.code === 'KeyD') player.moveRight = true;
+    if(e.code === 'Space') {
+      e.preventDefault();
       const bullet = player.shoot();
       if(bullet) bullets.push(bullet);
     }
   });
   window.addEventListener('keyup', e => {
-    if(e.key === 'ArrowLeft' || e.key.toLowerCase() === 'a') player.moveLeft = false;
-    if(e.key === 'ArrowRight' || e.key.toLowerCase() === 'd') player.moveRight = false;
+    if(e.code === 'ArrowLeft' || e.code === 'KeyA') player.moveLeft = false;
+    if(e.code === 'ArrowRight' || e.code === 'KeyD') player.moveRight = false;
   });
 
+  // Start game button handler
   startGameBtn.addEventListener('click', () => {
     modalEl.classList.add('hidden');
     resetGame();
@@ -413,9 +425,9 @@
     gameLoop();
   });
 
+  // Initial setup
   drawLives();
   updateStars();
-
 })();
 </script>
 </body>
