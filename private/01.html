@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Star Wars: Galaxy Annihilator - Upgraded Speed & Visuals</title>
+  <title>Star Wars: Galaxy Annihilator - Bonus & Star Wars Ships</title>
   <style>
     body {
       margin: 0; padding: 0;
@@ -141,7 +141,7 @@
       this.x = Math.random() * width;
       this.y = Math.random() * height;
       this.size = Math.random() * 2 + 0.5;
-      this.speed = this.size * 1.2; // faster stars
+      this.speed = this.size * 1.2;
       this.brightness = Math.random() * 0.7 + 0.3;
       this.brightnessDirection = Math.random() > 0.5 ? 1 : -1;
     }
@@ -180,39 +180,75 @@
       this.height = 40;
       this.x = width/2 - this.width/2;
       this.y = height - this.height - 10;
-      this.speed = 12; // faster player
+      this.speed = 12;
       this.color = '#FFE81F';
       this.moveLeft = false;
       this.moveRight = false;
       this.canShoot = true;
-      this.shootCooldown = 180; // faster shooting
+      this.shootCooldown = 180;
+      this.rapidFire = false;
+      this.rapidFireTimer = 0;
+      this.baseShootCooldown = 180;
     }
     draw() {
+      // Draw ship shaped like a Star Wars X-Wing-inspired ship
+      ctx.save();
+      ctx.translate(this.x + this.width / 2, this.y + this.height / 2);
       ctx.fillStyle = this.color;
       ctx.shadowColor = '#FFE81F';
       ctx.shadowBlur = 15;
+
+      // Body
       ctx.beginPath();
-      ctx.moveTo(this.x + this.width/2, this.y);
-      ctx.lineTo(this.x, this.y + this.height);
-      ctx.lineTo(this.x + this.width, this.y + this.height);
+      ctx.moveTo(0, -this.height/2);
+      ctx.lineTo(-this.width/2, this.height/2);
+      ctx.lineTo(0, this.height/4);
+      ctx.lineTo(this.width/2, this.height/2);
       ctx.closePath();
       ctx.fill();
+
+      // Wings
+      ctx.beginPath();
+      ctx.moveTo(-this.width/2, this.height/4);
+      ctx.lineTo(-this.width/2 - 10, this.height/2);
+      ctx.lineTo(-this.width/2, this.height/2);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.moveTo(this.width/2, this.height/4);
+      ctx.lineTo(this.width/2 + 10, this.height/2);
+      ctx.lineTo(this.width/2, this.height/2);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.restore();
       ctx.shadowBlur = 0;
-      ctx.strokeStyle = 'white';
-      ctx.lineWidth = 2;
-      ctx.stroke();
     }
     update() {
       if(this.moveLeft) this.x -= this.speed;
       if(this.moveRight) this.x += this.speed;
       if(this.x < 0) this.x = 0;
       if(this.x + this.width > width) this.x = width - this.width;
+
+      if(this.rapidFire) {
+        this.rapidFireTimer--;
+        if(this.rapidFireTimer <= 0) {
+          this.rapidFire = false;
+          this.shootCooldown = this.baseShootCooldown;
+        }
+      }
     }
     shoot() {
       if(!this.canShoot) return null;
       this.canShoot = false;
       setTimeout(() => this.canShoot = true, this.shootCooldown);
       return new Bullet(this.x + this.width/2, this.y);
+    }
+    activateRapidFire(duration = 600) {
+      this.rapidFire = true;
+      this.rapidFireTimer = duration;
+      this.shootCooldown = 60; // faster shooting when rapid fire
     }
   }
 
@@ -222,7 +258,7 @@
       this.x = x;
       this.y = y;
       this.radius = 7;
-      this.speed = 18; // faster bullet
+      this.speed = 18;
       this.color = '#fff';
       this.active = true;
     }
@@ -242,35 +278,128 @@
   }
 
   // --- Enemy ---
+  // Draw different star wars ships — TIE Fighter and Star Destroyer inspired shapes
   class Enemy {
     constructor(x, y, speedMultiplier = 1) {
       this.x = x;
       this.y = y;
-      this.width = 40 + Math.random()*20; // varied size
-      this.height = 30 + Math.random()*15;
       this.speed = 2.5 * speedMultiplier;
-      this.color = `hsl(${Math.random()*360}, 80%, 60%)`; // colorful enemies
+      this.type = Math.random() < 0.5 ? 'tie' : 'starDestroyer';
+      this.width = this.type === 'tie' ? 40 : 70;
+      this.height = this.type === 'tie' ? 40 : 30;
+      this.color = this.type === 'tie' ? '#8888ff' : '#bb8866';
       this.active = true;
       this.blinkTimer = 0;
     }
     update() {
       this.y += this.speed;
       if(this.y > height) this.active = false;
-
-      // simple blink effect
       this.blinkTimer += 0.05;
     }
     draw() {
-      const alpha = 0.7 + 0.3 * Math.sin(this.blinkTimer * 10);
-      ctx.fillStyle = this.color;
+      ctx.save();
+      ctx.translate(this.x + this.width / 2, this.y + this.height / 2);
       ctx.shadowColor = this.color;
-      ctx.shadowBlur = 10;
-      ctx.globalAlpha = alpha;
-      ctx.fillRect(this.x, this.y, this.width, this.height);
+      ctx.shadowBlur = 12;
+      ctx.globalAlpha = 0.8 + 0.2 * Math.sin(this.blinkTimer * 10);
+
+      if(this.type === 'tie') {
+        // Draw TIE Fighter simplified shape
+        ctx.fillStyle = this.color;
+        // center cockpit
+        ctx.beginPath();
+        ctx.arc(0, 0, 10, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#4444aa';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        // left solar wing
+        ctx.beginPath();
+        ctx.rect(-25, -15, 10, 30);
+        ctx.fill();
+        ctx.stroke();
+
+        // right solar wing
+        ctx.beginPath();
+        ctx.rect(15, -15, 10, 30);
+        ctx.fill();
+        ctx.stroke();
+      }
+      else if(this.type === 'starDestroyer') {
+        // Draw Star Destroyer simplified shape (triangle with details)
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        ctx.moveTo(-this.width / 2, this.height / 2);
+        ctx.lineTo(this.width / 2, this.height / 2);
+        ctx.lineTo(0, -this.height / 2);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = '#664422';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // windows detail
+        ctx.fillStyle = '#fff';
+        for(let i = -20; i <= 20; i += 10){
+          ctx.fillRect(i, 5, 3, 4);
+        }
+      }
+
       ctx.globalAlpha = 1;
-      ctx.strokeStyle = 'white';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(this.x, this.y, this.width, this.height);
+      ctx.shadowBlur = 0;
+      ctx.restore();
+    }
+  }
+
+  // --- Bonus power-up ---
+  class Bonus {
+    constructor(x, y, type) {
+      this.x = x;
+      this.y = y;
+      this.width = 30;
+      this.height = 30;
+      this.speed = 3;
+      this.type = type; // 'life', 'rapidFire', 'score'
+      this.active = true;
+      this.color = {
+        life: '#4CAF50',
+        rapidFire: '#2196F3',
+        score: '#FFC107',
+      }[type] || '#fff';
+      this.blinkTimer = 0;
+    }
+    update() {
+      this.y += this.speed;
+      if(this.y > height) this.active = false;
+      this.blinkTimer += 0.1;
+    }
+    draw() {
+      ctx.save();
+      ctx.translate(this.x + this.width/2, this.y + this.height/2);
+      ctx.shadowColor = this.color;
+      ctx.shadowBlur = 20;
+      ctx.fillStyle = this.color;
+      ctx.globalAlpha = 0.7 + 0.3 * Math.sin(this.blinkTimer * 6);
+
+      // Draw a simple power-up icon shaped like a starburst
+      ctx.beginPath();
+      for(let i=0; i<8; i++) {
+        let angle = i * (Math.PI / 4);
+        let r1 = 10;
+        let r2 = 4;
+        ctx.lineTo(Math.cos(angle) * r1, Math.sin(angle) * r1);
+        ctx.lineTo(Math.cos(angle + Math.PI/8) * r2, Math.sin(angle + Math.PI/8) * r2);
+      }
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.globalAlpha = 1;
+      ctx.shadowBlur = 0;
+      ctx.restore();
+    }
+    getRect() {
+      return {x: this.x, y: this.y, width: this.width, height: this.height};
     }
   }
 
@@ -305,6 +434,7 @@
   let bullets = [];
   let enemies = [];
   let explosions = [];
+  let bonuses = [];
   let lives = 3;
   let score = 0;
   let gameRunning = false;
@@ -320,10 +450,10 @@
 
   // Spawn waves with speed variations and more enemies
   function spawnWave() {
-    const waveCount = 3 + Math.floor(Math.random()*3); // 3-5 enemies per wave
+    const waveCount = 3 + Math.floor(Math.random()*3);
     for(let i=0; i<waveCount; i++) {
-      const x = Math.random() * (width - 60);
-      const speedMult = 0.8 + Math.random()*1.4; // speed variety
+      const x = Math.random() * (width - 80);
+      const speedMult = 0.8 + Math.random()*1.4;
       enemies.push(new Enemy(x, -60 - Math.random()*200, speedMult));
     }
   }
@@ -331,8 +461,8 @@
   let enemyWaveInterval;
 
   function startEnemySpawning() {
-    spawnWave(); // initial wave
-    enemyWaveInterval = setInterval(spawnWave, 1300); // faster wave spawn
+    spawnWave();
+    enemyWaveInterval = setInterval(spawnWave, 1300);
   }
   function stopEnemySpawning() {
     clearInterval(enemyWaveInterval);
@@ -345,126 +475,163 @@
     modalEl.classList.remove('hidden');
   }
 
-  function resetGame() {
-    score = 0;
-    lives = 3;
-    bullets = [];
-    enemies = [];
-    explosions = [];
-    player = new Player();
-    drawLives();
-    scoreEl.textContent = `SCORE: ${score}`;
+  // Simple rectangle collision detection
+  function rectCollision(r1, r2) {
+    return !(r2.x > r1.x + r1.width || 
+             r2.x + r2.width < r1.x || 
+             r2.y > r1.y + r1.height || 
+             r2.y + r2.height < r1.y);
   }
 
-  // Collision helpers
-  function collideRect(a, b) {
-    return a.x < b.x + b.width &&
-           a.x + a.width > b.x &&
-           a.y < b.y + b.height &&
-           a.y + a.height > b.y;
-  }
+  // Check bullet collisions with enemies
+  function checkCollisions() {
+    bullets.forEach(bullet => {
+      enemies.forEach(enemy => {
+        if(enemy.active && bullet.active) {
+          const enemyRect = {x: enemy.x, y: enemy.y, width: enemy.width, height: enemy.height};
+          const bulletRect = {x: bullet.x - bullet.radius, y: bullet.y - bullet.radius, width: bullet.radius*2, height: bullet.radius*2};
+          if(rectCollision(enemyRect, bulletRect)) {
+            enemy.active = false;
+            bullet.active = false;
+            explosions.push(new Explosion(enemy.x + enemy.width/2, enemy.y + enemy.height/2));
+            score += 50;
 
-  function collideCircleRect(circle, rect) {
-    const distX = Math.abs(circle.x - rect.x - rect.width / 2);
-    const distY = Math.abs(circle.y - rect.y - rect.height / 2);
-
-    if (distX > (rect.width / 2 + circle.radius)) return false;
-    if (distY > (rect.height / 2 + circle.radius)) return false;
-
-    if (distX <= (rect.width / 2)) return true;
-    if (distY <= (rect.height / 2)) return true;
-
-    const dx = distX - rect.width / 2;
-    const dy = distY - rect.height / 2;
-    return (dx * dx + dy * dy <= (circle.radius * circle.radius));
-  }
-
-  // Main loop
-  function gameLoop() {
-    if(!gameRunning) return;
-
-    ctx.clearRect(0, 0, width, height);
-
-    player.update();
-    player.draw();
-
-    bullets.forEach((b, i) => {
-      b.update();
-      if(!b.active) bullets.splice(i, 1);
-      else b.draw();
-    });
-
-    enemies.forEach((e, i) => {
-      e.update();
-      if(!e.active) {
-        enemies.splice(i, 1);
-        return;
-      }
-      e.draw();
-
-      // Check enemy/player collision
-      if(collideRect(player, e)) {
-        enemies.splice(i, 1);
-        lives--;
-        drawLives();
-        if(lives <= 0) {
-          gameOver();
-          return;
-        }
-      }
-
-      // Bullet/enemy collisions
-      bullets.forEach((b, bi) => {
-        if(collideCircleRect(b, e)) {
-          explosions.push(new Explosion(e.x + e.width/2, e.y + e.height/2));
-          enemies.splice(i, 1);
-          bullets.splice(bi, 1);
-          score += 10;
-          scoreEl.textContent = `SCORE: ${score}`;
+            // 30% chance to drop a bonus power-up
+            if(Math.random() < 0.3) {
+              const bonusTypes = ['life', 'rapidFire', 'score'];
+              const chosenType = bonusTypes[Math.floor(Math.random()*bonusTypes.length)];
+              bonuses.push(new Bonus(enemy.x + enemy.width/2 - 15, enemy.y + enemy.height/2, chosenType));
+            }
+          }
         }
       });
     });
 
-    // Explosions update/draw
-    explosions.forEach((ex, i) => {
-      ex.update();
-      if(!ex.active) explosions.splice(i, 1);
-      else ex.draw();
+    // Check enemy collisions with player (rectangle collision)
+    enemies.forEach(enemy => {
+      if(enemy.active) {
+        const enemyRect = {x: enemy.x, y: enemy.y, width: enemy.width, height: enemy.height};
+        const playerRect = {x: player.x, y: player.y, width: player.width, height: player.height};
+        if(rectCollision(enemyRect, playerRect)) {
+          enemy.active = false;
+          explosions.push(new Explosion(player.x + player.width/2, player.y + player.height/2));
+          lives--;
+          drawLives();
+          if(lives <= 0) gameOver();
+        }
+      }
     });
 
-    updateStars();
+    // Check bonuses collected by player
+    bonuses.forEach(bonus => {
+      if(bonus.active) {
+        const bonusRect = bonus.getRect();
+        const playerRect = {x: player.x, y: player.y, width: player.width, height: player.height};
+        if(rectCollision(bonusRect, playerRect)) {
+          bonus.active = false;
+          // Apply bonus effect
+          if(bonus.type === 'life') {
+            lives++;
+            drawLives();
+          }
+          else if(bonus.type === 'rapidFire') {
+            player.activateRapidFire();
+          }
+          else if(bonus.type === 'score') {
+            score += 200;
+          }
+        }
+      }
+    });
+  }
+
+  // Game loop
+  function gameLoop() {
+    if(!gameRunning) return;
+
+    // Clear game canvas
+    ctx.clearRect(0,0,width,height);
+
+    // Update and draw player
+    player.update();
+    player.draw();
+
+    // Update and draw bullets
+    bullets.forEach(b => {
+      b.update();
+      b.draw();
+    });
+    bullets = bullets.filter(b => b.active);
+
+    // Update and draw enemies
+    enemies.forEach(enemy => {
+      enemy.update();
+      enemy.draw();
+    });
+    enemies = enemies.filter(e => e.active);
+
+    // Update and draw explosions
+    explosions.forEach(ex => {
+      ex.update();
+      ex.draw();
+    });
+    explosions = explosions.filter(ex => ex.active);
+
+    // Update and draw bonuses
+    bonuses.forEach(bonus => {
+      bonus.update();
+      bonus.draw();
+    });
+    bonuses = bonuses.filter(bonus => bonus.active);
+
+    checkCollisions();
+
+    scoreEl.textContent = `SCORE: ${score}`;
 
     requestAnimationFrame(gameLoop);
   }
 
-  // Input handling
+  // Controls
   window.addEventListener('keydown', e => {
-    if(e.code === 'ArrowLeft' || e.code === 'KeyA') player.moveLeft = true;
-    if(e.code === 'ArrowRight' || e.code === 'KeyD') player.moveRight = true;
-    if(e.code === 'Space') {
-      e.preventDefault();
+    if(e.key === 'ArrowLeft' || e.key.toLowerCase() === 'a') player.moveLeft = true;
+    if(e.key === 'ArrowRight' || e.key.toLowerCase() === 'd') player.moveRight = true;
+    if(e.key === ' ') {
       const bullet = player.shoot();
       if(bullet) bullets.push(bullet);
+      e.preventDefault();
     }
   });
-
   window.addEventListener('keyup', e => {
-    if(e.code === 'ArrowLeft' || e.code === 'KeyA') player.moveLeft = false;
-    if(e.code === 'ArrowRight' || e.code === 'KeyD') player.moveRight = false;
+    if(e.key === 'ArrowLeft' || e.key.toLowerCase() === 'a') player.moveLeft = false;
+    if(e.key === 'ArrowRight' || e.key.toLowerCase() === 'd') player.moveRight = false;
   });
 
   startGameBtn.addEventListener('click', () => {
     modalEl.classList.add('hidden');
-    resetGame();
+    lives = 3;
+    score = 0;
+    player = new Player();
+    bullets = [];
+    enemies = [];
+    explosions = [];
+    bonuses = [];
+    drawLives();
     gameRunning = true;
     startEnemySpawning();
     gameLoop();
   });
 
+  // Start with lives displayed
   drawLives();
-  updateStars();
+
+  // Start starfield animation
+  function starfieldLoop() {
+    updateStars();
+    requestAnimationFrame(starfieldLoop);
+  }
+  starfieldLoop();
+
 })();
 </script>
-
 </body>
 </html>
