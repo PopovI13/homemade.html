@@ -3,19 +3,18 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Star Wars Shooter Updated with Starfield</title>
+<title>Star Wars Shooter Fullscreen</title>
 <style>
   body {
-    margin: 0; 
-    overflow: hidden; 
-    background: black; 
-    color: white; 
+    margin: 0;
+    overflow: hidden;
+    background: black;
+    color: white;
     font-family: 'Arial', sans-serif;
     user-select: none;
   }
   canvas {
     display: block;
-    margin: 0 auto;
     background: black;
   }
   #score {
@@ -24,6 +23,7 @@
     left: 10px;
     font-size: 20px;
     letter-spacing: 2px;
+    z-index: 10;
   }
   #lives {
     position: fixed;
@@ -31,6 +31,7 @@
     right: 10px;
     font-size: 20px;
     letter-spacing: 2px;
+    z-index: 10;
   }
   #startBtn {
     position: fixed;
@@ -45,6 +46,7 @@
     color: white;
     cursor: pointer;
     user-select: none;
+    z-index: 10;
   }
   #startBtn:hover {
     background: #005f99;
@@ -57,14 +59,18 @@
 <div id="lives">LIVES: 3</div>
 <button id="startBtn">START GAME</button>
 
-<canvas id="gameCanvas" width="480" height="640"></canvas>
+<canvas id="gameCanvas"></canvas>
 
 <script>
 (() => {
   const canvas = document.getElementById('gameCanvas');
   const ctx = canvas.getContext('2d');
-  const width = canvas.width;
-  const height = canvas.height;
+
+  let width = window.innerWidth;
+  let height = window.innerHeight;
+
+  canvas.width = width;
+  canvas.height = height;
 
   const scoreEl = document.getElementById('score');
   const livesEl = document.getElementById('lives');
@@ -73,17 +79,23 @@
   let gameRunning = false;
 
   // --- Starfield background ---
-  const stars = [];
-  const starCount = 120;
-  for (let i = 0; i < starCount; i++) {
-    stars.push({
-      x: Math.random() * width,
-      y: Math.random() * height,
-      radius: Math.random() * 1.3 + 0.2,
-      speed: Math.random() * 0.6 + 0.2,
-      opacity: Math.random() * 0.8 + 0.2
-    });
+  let stars = [];
+  const starCount = 200;
+
+  function initStars() {
+    stars = [];
+    for (let i = 0; i < starCount; i++) {
+      stars.push({
+        x: Math.random() * width,
+        y: Math.random() * height,
+        radius: Math.random() * 1.3 + 0.2,
+        speed: Math.random() * 0.6 + 0.2,
+        opacity: Math.random() * 0.8 + 0.2
+      });
+    }
   }
+  initStars();
+
   function drawStarfield() {
     ctx.fillStyle = 'black';
     ctx.fillRect(0, 0, width, height);
@@ -130,7 +142,6 @@
       ctx.shadowColor = '#00bfff';
       ctx.shadowBlur = 20;
 
-      // Draw the ship body (simple triangle with details)
       ctx.beginPath();
       ctx.moveTo(this.x + this.width / 2, this.y);
       ctx.lineTo(this.x + this.width, this.y + this.height);
@@ -138,7 +149,6 @@
       ctx.closePath();
       ctx.fill();
 
-      // Cockpit glow
       ctx.beginPath();
       ctx.fillStyle = '#00e0ff';
       ctx.arc(this.x + this.width / 2, this.y + this.height / 2, 8, 0, Math.PI * 2);
@@ -185,7 +195,7 @@
     constructor(x, y, speedMultiplier = 1, canShoot = false) {
       this.x = x;
       this.y = y;
-      this.speed = 2.5 * speedMultiplier;
+      this.speed = 1.5 * speedMultiplier; // slower speed
       this.canShoot = canShoot;
       this.type = Math.random() < 0.5 ? 'tie' : 'starDestroyer';
       this.width = this.type === 'tie' ? 40 : 70;
@@ -213,13 +223,12 @@
     drawBack() {
       ctx.save();
       ctx.translate(this.x + this.width / 2, this.y + this.height / 2);
-      ctx.rotate(Math.PI); // rotate 180 degrees to show back side
+      ctx.rotate(Math.PI);
       ctx.shadowColor = this.color;
       ctx.shadowBlur = 12;
       ctx.globalAlpha = 0.8 + 0.2 * Math.sin(this.blinkTimer * 10);
 
       if (this.type === 'tie') {
-        // Back cockpit (smaller circle)
         ctx.fillStyle = this.color;
         ctx.beginPath();
         ctx.arc(0, 0, 8, 0, Math.PI * 2);
@@ -228,7 +237,6 @@
         ctx.lineWidth = 2;
         ctx.stroke();
 
-        // Wings (flipped)
         ctx.beginPath();
         ctx.rect(-25, -15, 10, 30);
         ctx.fill();
@@ -250,7 +258,6 @@
         ctx.lineWidth = 2;
         ctx.stroke();
 
-        // reversed windows detail
         ctx.fillStyle = '#fff';
         for (let i = -20; i <= 20; i += 10) {
           ctx.fillRect(i, -10, 3, 4);
@@ -269,7 +276,6 @@
       ctx.globalAlpha = 0.8 + 0.2 * Math.sin(this.blinkTimer * 10);
 
       if (this.type === 'tie') {
-        // TIE Fighter front
         ctx.fillStyle = this.color;
         ctx.beginPath();
         ctx.arc(0, 0, 10, 0, Math.PI * 2);
@@ -309,8 +315,11 @@
       ctx.restore();
     }
     draw() {
-      this.drawBack();
-      this.drawFront();
+      if (this.canShoot) {
+        this.drawFront();
+      } else {
+        this.drawBack();
+      }
     }
   }
 
@@ -345,66 +354,65 @@
       this.x = x;
       this.y = y;
       this.radius = 1;
-      this.maxRadius = 30 + Math.random() * 20;
+      this.maxRadius = 25;
       this.active = true;
-      this.alpha = 1;
     }
     update() {
-      this.radius += 2;
-      this.alpha -= 0.06;
-      if (this.alpha <= 0) {
-        this.active = false;
-      }
+      this.radius += 1.5;
+      if (this.radius > this.maxRadius) this.active = false;
     }
     draw() {
-      ctx.save();
+      const gradient = ctx.createRadialGradient(
+        this.x,
+        this.y,
+        this.radius * 0.1,
+        this.x,
+        this.y,
+        this.radius
+      );
+      gradient.addColorStop(0, 'rgba(255,255,255,0.8)');
+      gradient.addColorStop(0.5, 'rgba(255,165,0,0.5)');
+      gradient.addColorStop(1, 'rgba(255,0,0,0)');
+
+      ctx.fillStyle = gradient;
       ctx.beginPath();
-      ctx.fillStyle = `rgba(255, 100, 0, ${this.alpha})`;
-      ctx.shadowColor = `rgba(255, 150, 0, ${this.alpha})`;
-      ctx.shadowBlur = 20;
       ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
       ctx.fill();
-      ctx.restore();
     }
   }
 
-  // --- Bonus ---
+  // --- Bonus item (like health or powerup) ---
   class Bonus {
     constructor(x, y) {
       this.x = x;
       this.y = y;
-      this.width = 24;
-      this.height = 24;
+      this.width = 25;
+      this.height = 25;
       this.speed = 3;
       this.active = true;
-      this.color = '#00ff00';
-      this.blinkTimer = 0;
+      this.color = '#ffff66'; // bright yellowish
+      this.angle = 0;
     }
     update() {
       this.y += this.speed;
       if (this.y > height) this.active = false;
-      this.blinkTimer += 0.1;
+      this.angle += 0.1;
     }
     draw() {
       ctx.save();
+      ctx.translate(this.x + this.width / 2, this.y + this.height / 2);
+      ctx.rotate(this.angle);
       ctx.fillStyle = this.color;
       ctx.shadowColor = this.color;
       ctx.shadowBlur = 15;
-      ctx.globalAlpha = 0.8 + 0.2 * Math.sin(this.blinkTimer * 10);
-      // Draw a simple glowing star as bonus
-      const cx = this.x + this.width / 2;
-      const cy = this.y + this.height / 2;
       ctx.beginPath();
       for (let i = 0; i < 5; i++) {
-        const angle = (i * 2 * Math.PI) / 5 - Math.PI / 2;
-        const x1 = cx + Math.cos(angle) * 10;
-        const y1 = cy + Math.sin(angle) * 10;
-        const angle2 = angle + Math.PI / 5;
-        const x2 = cx + Math.cos(angle2) * 4;
-        const y2 = cy + Math.sin(angle2) * 4;
-        if (i === 0) ctx.moveTo(x1, y1);
-        else ctx.lineTo(x1, y1);
-        ctx.lineTo(x2, y2);
+        ctx.lineTo(0, 10);
+        ctx.translate(0, 10);
+        ctx.rotate((Math.PI * 2) / 10);
+        ctx.lineTo(0, -10);
+        ctx.translate(0, -10);
+        ctx.rotate(-(Math.PI * 6) / 10);
       }
       ctx.closePath();
       ctx.fill();
@@ -412,197 +420,226 @@
     }
   }
 
-  // --- Variables ---
-  let player;
+  // --- Game variables ---
+  let player = new Player();
   let bullets = [];
   let enemies = [];
   let enemyBullets = [];
   let explosions = [];
   let bonuses = [];
+
   let score = 0;
   let lives = 3;
-  let waveTimer = 0;
-  const waveInterval = 120;
 
-  // --- Input handling ---
-  window.addEventListener('keydown', e => {
+  // Enemy spawn timer
+  let enemySpawnTimer = 0;
+  const enemySpawnInterval = 80;
+
+  // Bonus spawn timer
+  let bonusSpawnTimer = 0;
+  const bonusSpawnInterval = 1000;
+
+  // --- Input Handling ---
+  window.addEventListener('keydown', (e) => {
     if (!gameRunning) return;
-    if (e.key === 'ArrowLeft' || e.key.toLowerCase() === 'a') {
-      player.moveLeft = true;
-    }
-    if (e.key === 'ArrowRight' || e.key.toLowerCase() === 'd') {
-      player.moveRight = true;
-    }
-    if (e.key === ' ' || e.key.toLowerCase() === 'w') {
-      player.shoot();
-    }
+    if (e.code === 'ArrowLeft' || e.code === 'KeyA') player.moveLeft = true;
+    if (e.code === 'ArrowRight' || e.code === 'KeyD') player.moveRight = true;
+    if (e.code === 'Space') player.shoot();
   });
 
-  window.addEventListener('keyup', e => {
-    if (e.key === 'ArrowLeft' || e.key.toLowerCase() === 'a') {
-      player.moveLeft = false;
-    }
-    if (e.key === 'ArrowRight' || e.key.toLowerCase() === 'd') {
-      player.moveRight = false;
-    }
+  window.addEventListener('keyup', (e) => {
+    if (e.code === 'ArrowLeft' || e.code === 'KeyA') player.moveLeft = false;
+    if (e.code === 'ArrowRight' || e.code === 'KeyD') player.moveRight = false;
   });
 
-  // --- Collision detection ---
-  function rectIntersect(r1, r2) {
+  // Resize handler for fullscreen
+  window.addEventListener('resize', () => {
+    width = window.innerWidth;
+    height = window.innerHeight;
+    canvas.width = width;
+    canvas.height = height;
+    initStars();
+    player.x = width / 2 - player.width / 2;
+    player.y = height - player.height - 10;
+  });
+
+  // Collision detection helpers
+  function rectIntersect(a, b) {
     return !(
-      r2.x > r1.x + r1.width ||
-      r2.x + r2.width < r1.x ||
-      r2.y > r1.y + r1.height ||
-      r2.y + r2.height < r1.y
+      b.x > a.x + a.width ||
+      b.x + b.width < a.x ||
+      b.y > a.y + a.height ||
+      b.y + b.height < a.y
     );
   }
 
-  function checkCollisions() {
-    // Player bullets vs enemies
-    bullets.forEach(bullet => {
-      enemies.forEach(enemy => {
-        if (bullet.active && enemy.active) {
-          const enemyRect = {x: enemy.x, y: enemy.y, width: enemy.width, height: enemy.height};
-          const bulletRect = {x: bullet.x - bullet.width / 2, y: bullet.y, width: bullet.width, height: bullet.height};
-          if (rectIntersect(enemyRect, bulletRect)) {
-            bullet.active = false;
-            enemy.active = false;
-            explosions.push(new Explosion(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2));
-            score += 10;
-            // 25% chance to spawn bonus
-            if (Math.random() < 0.25) {
-              bonuses.push(new Bonus(enemy.x + enemy.width / 2 - 12, enemy.y + enemy.height));
-            }
-          }
-        }
-      });
-    });
-
-    // Enemy bullets vs player
-    enemyBullets.forEach(bullet => {
-      if (bullet.active) {
-        const playerRect = {x: player.x, y: player.y, width: player.width, height: player.height};
-        const bulletRect = {x: bullet.x - bullet.width / 2, y: bullet.y, width: bullet.width, height: bullet.height};
-        if (rectIntersect(playerRect, bulletRect)) {
-          bullet.active = false;
-          explosions.push(new Explosion(player.x + player.width / 2, player.y + player.height / 2));
-          lives--;
-          livesEl.textContent = `LIVES: ${lives}`;
-          if (lives <= 0) {
-            gameOver();
-          }
-        }
-      }
-    });
-
-    // Bonuses vs player
-    bonuses.forEach(bonus => {
-      if (bonus.active) {
-        const playerRect = {x: player.x, y: player.y, width: player.width, height: player.height};
-        const bonusRect = {x: bonus.x, y: bonus.y, width: bonus.width, height: bonus.height};
-        if (rectIntersect(playerRect, bonusRect)) {
-          bonus.active = false;
-          score += 50;
-          lives = Math.min(lives + 1, 5);
-          livesEl.textContent = `LIVES: ${lives}`;
-        }
-      }
-    });
-  }
-
-  // --- Spawn enemy wave ---
-  function spawnWave() {
-    const count = Math.floor(Math.random() * 3) + 3;
-    const spacing = width / (count + 1);
-    for (let i = 1; i <= count; i++) {
-      let canShoot = Math.random() < 0.3; // 30% enemies shoot
-      enemies.push(new Enemy(spacing * i - 20, -50, 0.6, canShoot));
-    }
-  }
-
-  // --- Game over ---
-  function gameOver() {
-    gameRunning = false;
-    alert(`Game Over!\nFinal Score: ${score}`);
-    startBtn.style.display = 'block';
-  }
-
-  // --- Game loop ---
+  // --- Game Loop ---
   function gameLoop() {
     if (!gameRunning) return;
 
+    // Background stars
     drawStarfield();
 
+    // Update player
     player.update();
     player.draw();
 
-    bullets.forEach(bullet => {
-      bullet.update();
-      bullet.draw();
+    // Update and draw player bullets
+    bullets.forEach((b) => {
+      b.update();
+      b.draw();
     });
-    bullets = bullets.filter(bullet => bullet.active);
+    bullets = bullets.filter(b => b.active);
 
-    enemies.forEach(enemy => {
-      enemy.update();
+    // Spawn enemies
+    enemySpawnTimer++;
+    if (enemySpawnTimer >= enemySpawnInterval) {
+      enemySpawnTimer = 0;
+      // Spawn enemies at random x positions at top
+      const x = Math.random() * (width - 70);
+      // 30% chance enemy can shoot
+      const canShoot = Math.random() < 0.3;
+      enemies.push(new Enemy(x, -50, 1, canShoot));
+    }
+
+    // Update and draw enemies
+    enemies.forEach((e) => {
+      e.update();
+      e.draw();
     });
-    enemies = enemies.filter(enemy => enemy.active);
+    enemies = enemies.filter(e => e.active);
 
-    enemyBullets.forEach(bullet => {
-      bullet.update();
-      bullet.draw();
+    // Update and draw enemy bullets
+    enemyBullets.forEach((eb) => {
+      eb.update();
+      eb.draw();
     });
-    enemyBullets = enemyBullets.filter(bullet => bullet.active);
+    enemyBullets = enemyBullets.filter(eb => eb.active);
 
-    // Draw enemies back first (for 3D effect)
-    enemies.forEach(enemy => enemy.drawBack());
-    // Then player bullets over enemies back, then enemies front
-    bullets.forEach(bullet => bullet.draw());
-    enemies.forEach(enemy => enemy.drawFront());
-
-    explosions.forEach(explosion => {
-      explosion.update();
-      explosion.draw();
+    // Update and draw explosions
+    explosions.forEach((ex) => {
+      ex.update();
+      ex.draw();
     });
-    explosions = explosions.filter(explosion => explosion.active);
+    explosions = explosions.filter(ex => ex.active);
 
+    // Spawn bonuses
+    bonusSpawnTimer++;
+    if (bonusSpawnTimer >= bonusSpawnInterval) {
+      bonusSpawnTimer = 0;
+      const x = Math.random() * (width - 30);
+      bonuses.push(new Bonus(x, -30));
+    }
+
+    // Update and draw bonuses
     bonuses.forEach(bonus => {
       bonus.update();
       bonus.draw();
     });
     bonuses = bonuses.filter(bonus => bonus.active);
 
-    checkCollisions();
+    // Collision checks
 
-    waveTimer++;
-    if (waveTimer > waveInterval) {
-      spawnWave();
-      waveTimer = 0;
-    }
+    // Bullets vs Enemies
+    bullets.forEach(b => {
+      enemies.forEach(e => {
+        if (
+          b.active &&
+          e.active &&
+          rectIntersect({x: b.x - b.width/2, y: b.y, width: b.width, height: b.height},
+                        {x: e.x, y: e.y, width: e.width, height: e.height})
+        ) {
+          b.active = false;
+          e.active = false;
+          score += 10;
+          explosions.push(new Explosion(e.x + e.width / 2, e.y + e.height / 2));
+        }
+      });
+    });
 
+    // Enemy bullets vs Player
+    enemyBullets.forEach(eb => {
+      if (
+        eb.active &&
+        rectIntersect(
+          {x: eb.x - eb.width / 2, y: eb.y, width: eb.width, height: eb.height},
+          {x: player.x, y: player.y, width: player.width, height: player.height}
+        )
+      ) {
+        eb.active = false;
+        lives--;
+        explosions.push(new Explosion(player.x + player.width / 2, player.y + player.height / 2));
+        if (lives <= 0) {
+          gameOver();
+        }
+      }
+    });
+
+    // Enemies vs Player (collision)
+    enemies.forEach(e => {
+      if (
+        e.active &&
+        rectIntersect(
+          {x: e.x, y: e.y, width: e.width, height: e.height},
+          {x: player.x, y: player.y, width: player.width, height: player.height}
+        )
+      ) {
+        e.active = false;
+        lives--;
+        explosions.push(new Explosion(player.x + player.width / 2, player.y + player.height / 2));
+        if (lives <= 0) {
+          gameOver();
+        }
+      }
+    });
+
+    // Player vs Bonuses
+    bonuses.forEach(bonus => {
+      if (
+        bonus.active &&
+        rectIntersect(
+          {x: bonus.x, y: bonus.y, width: bonus.width, height: bonus.height},
+          {x: player.x, y: player.y, width: player.width, height: player.height}
+        )
+      ) {
+        bonus.active = false;
+        lives++;
+      }
+    });
+
+    // Update UI
     scoreEl.textContent = `SCORE: ${score}`;
+    livesEl.textContent = `LIVES: ${lives}`;
 
     requestAnimationFrame(gameLoop);
   }
 
-  // --- Start game ---
+  function gameOver() {
+    gameRunning = false;
+    startBtn.textContent = `GAME OVER - SCORE: ${score}\nCLICK TO RESTART`;
+    startBtn.style.display = 'block';
+  }
+
   function startGame() {
-    player = new Player();
+    gameRunning = true;
+    score = 0;
+    lives = 3;
     bullets = [];
     enemies = [];
     enemyBullets = [];
     explosions = [];
     bonuses = [];
-    score = 0;
-    lives = 3;
-    scoreEl.textContent = `SCORE: ${score}`;
-    livesEl.textContent = `LIVES: ${lives}`;
-    waveTimer = 0;
-    gameRunning = true;
+    player.x = width / 2 - player.width / 2;
+    player.y = height - player.height - 10;
     startBtn.style.display = 'none';
     gameLoop();
   }
 
-  startBtn.addEventListener('click', startGame);
+  startBtn.addEventListener('click', () => {
+    startGame();
+  });
+
+  // Start with the start button visible
 })();
 </script>
 
