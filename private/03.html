@@ -10,24 +10,9 @@
     body, html {
       margin: 0; padding: 0;
       overflow: hidden;
-      background: linear-gradient(270deg, #0f2027, #203a43, #2c5364, #0f2027);
-      background-size: 800% 800%;
-      animation: gradientBG 20s ease infinite;
+      background: black;
       height: 100vh;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      color: white;
-      font-family: 'Orbitron', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      text-align: center;
       user-select: none;
-    }
-
-    @keyframes gradientBG {
-      0% {background-position:0% 50%;}
-      50% {background-position:100% 50%;}
-      100% {background-position:0% 50%;}
     }
 
     canvas {
@@ -36,25 +21,15 @@
       width: 100vw;
       height: 100vh;
       display: block;
-      z-index: -1;
+      z-index: 0;
       filter: drop-shadow(0 0 4px rgba(255,255,255,0.7));
-    }
-
-    h1 {
-      font-size: 3.5rem;
-      margin-bottom: 10px;
-      text-shadow: 0 0 15px #00fff7, 0 0 25px #00fff7;
-    }
-
-    p {
-      font-size: 1.3rem;
-      margin-bottom: 30px;
-      letter-spacing: 1.2px;
-      text-shadow: 0 0 10px rgba(0,0,0,0.7);
+      background: black;
     }
 
     a.back-link {
-      position: relative;
+      position: fixed;
+      top: 20px;
+      left: 20px;
       z-index: 10;
       color: #00fff7;
       text-decoration: none;
@@ -66,19 +41,19 @@
       transition: background-color 0.3s ease, color 0.3s ease;
       letter-spacing: 1px;
       user-select: none;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(6px);
     }
 
     a.back-link:hover {
       background-color: #00fff7;
-      color: #0f2027;
+      color: #000;
       box-shadow: 0 0 15px #00fff7;
     }
   </style>
 </head>
 <body>
 
-  <h1>Epic Particle Explosion</h1>
-  <p>Click or move your mouse to unleash swirling colorful particles!</p>
   <a href="cool-projects.html" class="back-link">← Back to Cool Projects</a>
 
   <canvas id="canvas"></canvas>
@@ -96,11 +71,6 @@
     }
     window.addEventListener('resize', resize);
     resize();
-
-    // Utility: HSL color interpolation for smooth glow
-    function lerp(a, b, t) {
-      return a + (b - a) * t;
-    }
 
     class Particle {
       constructor(x, y, colorHue) {
@@ -122,7 +92,6 @@
 
       update() {
         if (!this.orbiting) {
-          // Initial explosion movement with friction
           this.x += this.vx;
           this.y += this.vy;
           this.vx *= 0.95;
@@ -133,7 +102,6 @@
             this.angle = Math.random() * Math.PI * 2;
           }
         } else {
-          // Orbit around origin point
           this.angle += this.speed;
           this.x = this.originX + Math.cos(this.angle) * this.radius;
           this.y = this.originY + Math.sin(this.angle) * this.radius;
@@ -172,7 +140,6 @@
       }
     }
 
-    // Mouse interaction
     let lastMousePos = { x: width / 2, y: height / 2 };
     canvas.addEventListener('click', e => {
       createExplosion(e.clientX, e.clientY);
@@ -183,7 +150,6 @@
       const dy = e.clientY - lastMousePos.y;
       const dist = Math.sqrt(dx * dx + dy * dy);
 
-      // Add particles if mouse moves fast enough
       if (dist > 15) {
         createExplosion(e.clientX, e.clientY);
       }
@@ -192,11 +158,9 @@
     });
 
     function animate() {
-      // Slight trail effect
-      ctx.fillStyle = 'rgba(15, 32, 39, 0.2)';
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
       ctx.fillRect(0, 0, width, height);
 
-      // Update & draw particles
       for (let i = particles.length - 1; i >= 0; i--) {
         const p = particles[i];
         p.update();
