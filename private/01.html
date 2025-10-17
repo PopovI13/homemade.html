@@ -1,105 +1,105 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" >
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Star Wars: Galaxy Annihilator - Updated</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet" />
-<style>
-  body {
-    margin: 0; padding: 0;
-    font-family: 'Orbitron', sans-serif;
-    background: #001022; /* dark space blue */
-    overflow: hidden;
-  }
-  canvas {
-    display: block;
-    margin: 0 auto;
-    cursor: none;
-  }
-  #starCanvas {
-    position: absolute; top: 0; left: 0; z-index: 0;
-  }
-  #gameCanvas {
-    position: relative; z-index: 1;
-    background: transparent; /* transparent so starfield shows */
-  }
-  .game-container {
-    position: relative;
-    width: 100vw; height: 100vh;
-    overflow: hidden;
-  }
-  .absolute {
-    position: absolute;
-  }
-  #scoreEl {
-    font-weight: 700;
-    font-size: 1.5rem;
-  }
-  #livesContainer {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-  .life {
-    width: 30px;
-    height: 30px;
-    background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4MCIgaGVpZ2h0PSI2MCIgdmlld0JveD0iMCAwIDgwIDYwIj48cGF0aCBkPSJNNCAzMGMyMSAwIDIxIDE5IDQwIDE5czE5LTE5IDQwLTE5djIuM2MwIDExLjQtMTMuNCAyMC43LTMwIDIwLjdoLTIwYy0xNi42IDAtMzAtOS4zLTMwLTIwLjdWMzB6IiBmaWxsPSIjYjBiMGIwIi8+PHBhdGggZD0iTTMwIDMzaDE4djJoLTE4eiIgZmlsbD0iIzgwODA4MCIvPjxwYXRoIGQ9Ik0zMyA1My41bDEuNS0yLjVoMTJsMS41IDIuNXoiIGZpbGw9IiM4MDgwODAiLz48cGF0aCBkPSJNNCAzMGg3MmMwLTEyLjctMTYtMjMtMzYtMjNTNCAxNy4zIDQgMzB6IiBmaWxsPSIjZDZkNmQ2Ii8+PHBhdGggZD0iTTI1IDMwYzAgMy4zIDEuMyA2IDIuOSA4LjNsMS4yLTMuN2MtLjYtMS4yLTEtMi42LTEtNC4xIDAtNC40IDMuMi04IDcuMS04czcuMSA0IDcgOC41YzAgMS43LS41IDMuMy0xLjMgNC44bDEuMyAzLjVjMS44LTIuNSAyLjktNS41IDIuOS04LjkgMC03LjYtNi4yLTE0LTExLTE0cy0xMSA2LjQtMTEgMTR6IiBmaWxsPSIjYjBiMGIwIi8+PHBhdGggZD0iTTUwIDMwaDE2djIuNUg1MHoiIGZpbGw9IiM4MDgwODAiLz48cGF0aCBkPSJNNTQuNSA0MC41aDEwdjJoLTEweiIgZmlsbD0iIzgwODA4MCIvPjxwYXRoIGQ9Ik01MCAzNWgxM3YyaC0xM3oiIGZpbGw9IiM4MDgwODAiLz48cGF0aCBkPSJNNjIgMjdjMCAyLjggMS4xIDUuMyAyLjkgNy4zbDEuMi0zLjJjLS43LTEtMS4xLTIuMy0xLjEtMy42IDAtMy44IDIuOC03IDYtN3M2IDMuMSA2IDYuNWMwIDEuNS0uNCAzLTEuMiA0LjJsMS4yIDIuOWMyLTIuMiAzLjEtNS4xIDMuMS04LjIgMC02LjctNS4yLTEyLTExLTEycy0xMSA1LjMtMTEgMTJ6IiBmaWxsPSIjYjBiMGIwIi8+PC9zdmc+');
-    background-size: contain;
-    background-repeat: no-repeat;
-    background-position: center;
-  }
-  .modal {
-    background-color: rgba(0,0,0,0.85);
-    border: 2px solid #FFE81F;
-    padding: 2rem;
-    border-radius: 12px;
-    max-width: 400px;
-    text-align: center;
-    color: #FFE81F;
-  }
-  button {
-    background-color: #FFE81F;
-    border: none;
-    padding: 12px 30px;
-    font-weight: 700;
-    border-radius: 30px;
-    cursor: pointer;
-    transition: transform 0.3s ease;
-    font-family: 'Orbitron', sans-serif;
-    color: black;
-    margin-top: 20px;
-  }
-  button:hover {
-    background-color: #ffeb3b;
-    transform: scale(1.05);
-  }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Star Wars: Galaxy Annihilator - Minimal Working</title>
+  <style>
+    body {
+      margin: 0; padding: 0;
+      font-family: 'Orbitron', sans-serif;
+      background: #001022;
+      overflow: hidden;
+      color: #FFE81F;
+    }
+    canvas {
+      display: block;
+      margin: 0 auto;
+      background: transparent;
+    }
+    #starCanvas, #gameCanvas {
+      position: absolute;
+      top: 0; left: 0;
+      display: block;
+    }
+    #starCanvas {
+      z-index: 0;
+    }
+    #gameCanvas {
+      z-index: 1;
+    }
+    #scoreEl {
+      position: absolute;
+      top: 10px; left: 10px;
+      font-weight: 700;
+      font-size: 24px;
+      z-index: 10;
+    }
+    #livesContainer {
+      position: absolute;
+      top: 10px; right: 10px;
+      display: flex;
+      gap: 8px;
+      z-index: 10;
+      font-weight: 700;
+      font-size: 18px;
+    }
+    .life {
+      width: 30px;
+      height: 30px;
+      background: #FFE81F;
+      clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+    }
+    #modalEl {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.9);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: #FFE81F;
+      font-weight: 700;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 32px;
+      z-index: 20;
+    }
+    #modalEl.hidden {
+      display: none;
+    }
+    button {
+      margin-top: 20px;
+      padding: 12px 24px;
+      background: #FFE81F;
+      border: none;
+      border-radius: 30px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 18px;
+      color: black;
+      transition: transform 0.2s ease;
+    }
+    button:hover {
+      transform: scale(1.05);
+      background: #fff;
+    }
+  </style>
 </head>
 <body>
-  <div class="game-container">
-    <canvas id="starCanvas"></canvas>
-    <canvas id="gameCanvas" width="800" height="600"></canvas>
+  <canvas id="starCanvas"></canvas>
+  <canvas id="gameCanvas"></canvas>
 
-    <div class="absolute top-4 left-4 text-white z-10" style="font-size:1.5rem; font-weight:700;">
-      SCORE: <span id="scoreEl">0</span>
-    </div>
-    <div class="absolute top-4 right-4 text-white z-10 flex items-center gap-2" id="livesContainer" style="font-size:1.2rem; font-weight:700;">
-      LIVES:
-    </div>
+  <div id="scoreEl">SCORE: 0</div>
+  <div id="livesContainer">LIVES: </div>
 
-    <div id="modalEl" class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-90 z-20 hidden">
-      <div class="modal">
-        <h1 style="font-size:3rem;" id="modalScore">0</h1>
-        <p style="font-size:1.2rem;">POINTS</p>
-        <button id="startGameBtn">START GAME</button>
-        <p style="margin-top: 1rem; font-size:0.9rem; color: white;">
-          Use ← → or A/D to move, Space to shoot.<br/>
-          Hard enemies drop power-ups!
-        </p>
-      </div>
+  <div id="modalEl">
+    <div id="modalScore">0</div>
+    <div>POINTS</div>
+    <button id="startGameBtn">START GAME</button>
+    <div style="font-size:16px; margin-top: 10px; font-weight: 400;">
+      Use ← → or A/D to move, Space to shoot.<br/>
+      Enemies drop power-ups!
     </div>
   </div>
 
@@ -107,8 +107,8 @@
 (() => {
   const starCanvas = document.getElementById('starCanvas');
   const starCtx = starCanvas.getContext('2d');
-  const canvas = document.getElementById('gameCanvas');
-  const ctx = canvas.getContext('2d');
+  const gameCanvas = document.getElementById('gameCanvas');
+  const ctx = gameCanvas.getContext('2d');
 
   const scoreEl = document.getElementById('scoreEl');
   const livesContainer = document.getElementById('livesContainer');
@@ -116,103 +116,80 @@
   const modalScore = document.getElementById('modalScore');
   const startGameBtn = document.getElementById('startGameBtn');
 
-  let score = 0;
-  let gameRunning = false;
+  let width = window.innerWidth;
+  let height = window.innerHeight;
 
-  const maxWidth = 800;
-  const maxHeight = 600;
-  const aspectRatio = maxWidth / maxHeight;
+  function resize() {
+    width = window.innerWidth;
+    height = window.innerHeight;
 
-  function resizeCanvas() {
-    const screenWidth = window.innerWidth;
-    const screenHeight = window.innerHeight;
-    if(screenWidth / screenHeight > aspectRatio){
-      canvas.height = screenHeight * 0.9;
-      canvas.width = canvas.height * aspectRatio;
-    } else {
-      canvas.width = screenWidth * 0.9;
-      canvas.height = canvas.width / aspectRatio;
-    }
-    starCanvas.width = canvas.width;
-    starCanvas.height = canvas.height;
+    starCanvas.width = width;
+    starCanvas.height = height;
 
-    if(player) {
-      player.y = canvas.height - player.height - 10;
-      if(player.x + player.width > canvas.width) player.x = canvas.width - player.width;
-    }
+    gameCanvas.width = width;
+    gameCanvas.height = height;
   }
-  window.addEventListener('resize', resizeCanvas);
-  resizeCanvas();
+  window.addEventListener('resize', resize);
+  resize();
 
   // --- Starfield ---
   class Star {
     constructor() {
-      this.reset();
-    }
-    reset() {
-      this.x = Math.random() * starCanvas.width;
-      this.y = Math.random() * starCanvas.height;
-      this.size = Math.random() * 1.5 + 0.3;
+      this.x = Math.random() * width;
+      this.y = Math.random() * height;
+      this.size = Math.random() * 1.5 + 0.5;
       this.speed = this.size * 0.3;
       this.brightness = Math.random() * 0.7 + 0.3;
       this.brightnessDirection = Math.random() > 0.5 ? 1 : -1;
     }
     update() {
       this.y += this.speed;
-      if(this.y > starCanvas.height) {
-        this.reset();
-        this.y = 0;
-      }
-      // Twinkle effect
+      if(this.y > height) this.y = 0;
       this.brightness += 0.01 * this.brightnessDirection;
-      if(this.brightness >= 1 || this.brightness <= 0.3) this.brightnessDirection *= -1;
+      if(this.brightness > 1) this.brightnessDirection = -1;
+      if(this.brightness < 0.3) this.brightnessDirection = 1;
     }
     draw() {
       starCtx.beginPath();
-      starCtx.arc(this.x, this.y, this.size, 0, 2 * Math.PI);
-      starCtx.fillStyle = `rgba(255, 255, 255, ${this.brightness})`;
+      starCtx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+      starCtx.fillStyle = `rgba(255,255,255,${this.brightness.toFixed(2)})`;
       starCtx.shadowColor = 'white';
-      starCtx.shadowBlur = 6;
+      starCtx.shadowBlur = 5;
       starCtx.fill();
     }
   }
 
   const stars = [];
-  const STAR_COUNT = 150;
-
-  for(let i = 0; i < STAR_COUNT; i++){
-    stars.push(new Star());
-  }
+  for(let i=0; i<150; i++) stars.push(new Star());
 
   function updateStars() {
-    starCtx.clearRect(0, 0, starCanvas.width, starCanvas.height);
-    for(const star of stars) {
+    starCtx.clearRect(0,0,width,height);
+    stars.forEach(star => {
       star.update();
       star.draw();
-    }
+    });
   }
 
-  // --- Player setup ---
+  // --- Player ---
   class Player {
     constructor() {
       this.width = 50;
       this.height = 40;
-      this.x = canvas.width / 2 - this.width / 2;
-      this.y = canvas.height - this.height - 10;
-      this.speed = 6;
+      this.x = width/2 - this.width/2;
+      this.y = height - this.height - 10;
+      this.speed = 7;
       this.color = '#FFE81F';
       this.moveLeft = false;
       this.moveRight = false;
       this.canShoot = true;
-      this.shootCooldown = 300; // milliseconds
+      this.shootCooldown = 300;
     }
     draw() {
       ctx.fillStyle = this.color;
-      ctx.strokeStyle = '#fff';
+      ctx.strokeStyle = 'white';
       ctx.lineWidth = 2;
-      // Simple triangle ship
       ctx.beginPath();
-      ctx.moveTo(this.x + this.width / 2, this.y);
+      ctx.moveTo(this.x + this.width/2, this.y);
       ctx.lineTo(this.x, this.y + this.height);
       ctx.lineTo(this.x + this.width, this.y + this.height);
       ctx.closePath();
@@ -222,15 +199,14 @@
     update() {
       if(this.moveLeft) this.x -= this.speed;
       if(this.moveRight) this.x += this.speed;
-      // Boundaries
       if(this.x < 0) this.x = 0;
-      if(this.x + this.width > canvas.width) this.x = canvas.width - this.width;
+      if(this.x + this.width > width) this.x = width - this.width;
     }
     shoot() {
       if(!this.canShoot) return null;
       this.canShoot = false;
-      setTimeout(() => { this.canShoot = true }, this.shootCooldown);
-      return new Bullet(this.x + this.width / 2, this.y);
+      setTimeout(() => this.canShoot = true, this.shootCooldown);
+      return new Bullet(this.x + this.width/2, this.y);
     }
   }
 
@@ -239,8 +215,8 @@
     constructor(x, y) {
       this.x = x;
       this.y = y;
-      this.radius = 4;
-      this.speed = 9;
+      this.radius = 5;
+      this.speed = 10;
       this.color = '#fff';
       this.active = true;
     }
@@ -250,7 +226,7 @@
     }
     draw() {
       ctx.beginPath();
-      ctx.arc(this.x, this.y, this.radius, 0, 2 * Math.PI);
+      ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
       ctx.fillStyle = this.color;
       ctx.shadowColor = '#FFE81F';
       ctx.shadowBlur = 10;
@@ -258,7 +234,7 @@
     }
   }
 
-  // --- Simple enemy for demo ---
+  // --- Enemy ---
   class Enemy {
     constructor(x, y) {
       this.x = x;
@@ -271,7 +247,7 @@
     }
     update() {
       this.y += this.speed * 0.4;
-      if(this.y > canvas.height) this.active = false;
+      if(this.y > height) this.active = false;
     }
     draw() {
       ctx.fillStyle = this.color;
@@ -284,15 +260,17 @@
     }
   }
 
-  // --- Game variables ---
+  // --- Game state ---
   let player = new Player();
   let bullets = [];
   let enemies = [];
   let lives = 3;
+  let score = 0;
+  let gameRunning = false;
 
   function drawLives() {
     livesContainer.innerHTML = 'LIVES: ';
-    for(let i=0; i<lives; i++) {
+    for(let i=0; i<lives; i++){
       const life = document.createElement('div');
       life.classList.add('life');
       livesContainer.appendChild(life);
@@ -300,12 +278,12 @@
   }
 
   function spawnEnemy() {
-    const x = Math.random() * (canvas.width - 40);
+    const x = Math.random() * (width - 40);
     enemies.push(new Enemy(x, -40));
   }
 
-  // Spawn enemies every 1.8 seconds
   let enemyInterval;
+
   function startEnemySpawning() {
     enemyInterval = setInterval(spawnEnemy, 1800);
   }
@@ -313,7 +291,6 @@
     clearInterval(enemyInterval);
   }
 
-  // Game over function
   function gameOver() {
     gameRunning = false;
     stopEnemySpawning();
@@ -321,61 +298,14 @@
     modalEl.classList.remove('hidden');
   }
 
-  // Reset game state
   function resetGame() {
     score = 0;
     lives = 3;
     bullets = [];
     enemies = [];
-    player.x = canvas.width / 2 - player.width / 2;
+    player = new Player();
     drawLives();
-    scoreEl.textContent = score;
-  }
-
-  // Main game loop
-  function gameLoop() {
-    if(!gameRunning) return;
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    player.update();
-    player.draw();
-
-    bullets.forEach((bullet, idx) => {
-      bullet.update();
-      if(!bullet.active) bullets.splice(idx, 1);
-      else bullet.draw();
-    });
-
-    enemies.forEach((enemy, eIdx) => {
-      enemy.update();
-      if(!enemy.active) enemies.splice(eIdx, 1);
-      else enemy.draw();
-
-      // Check collision with player
-      if(collideRect(player, enemy)) {
-        enemies.splice(eIdx,1);
-        lives--;
-        drawLives();
-        if(lives <= 0) {
-          gameOver();
-          return;
-        }
-      }
-
-      // Check collision with bullets
-      bullets.forEach((bullet, bIdx) => {
-        if(collideCircleRect(bullet, enemy)) {
-          enemies.splice(eIdx, 1);
-          bullets.splice(bIdx, 1);
-          score += 10;
-          scoreEl.textContent = score;
-        }
-      });
-    });
-
-    updateStars();
-
-    requestAnimationFrame(gameLoop);
+    scoreEl.textContent = `SCORE: ${score}`;
   }
 
   // Collision helpers
@@ -387,18 +317,65 @@
   }
 
   function collideCircleRect(circle, rect) {
-    const distX = Math.abs(circle.x - rect.x - rect.width/2);
-    const distY = Math.abs(circle.y - rect.y - rect.height/2);
+    const distX = Math.abs(circle.x - rect.x - rect.width / 2);
+    const distY = Math.abs(circle.y - rect.y - rect.height / 2);
 
-    if(distX > (rect.width/2 + circle.radius)) return false;
-    if(distY > (rect.height/2 + circle.radius)) return false;
+    if (distX > (rect.width / 2 + circle.radius)) return false;
+    if (distY > (rect.height / 2 + circle.radius)) return false;
 
-    if(distX <= rect.width/2) return true;
-    if(distY <= rect.height/2) return true;
+    if (distX <= (rect.width / 2)) return true;
+    if (distY <= (rect.height / 2)) return true;
 
-    const dx = distX - rect.width/2;
-    const dy = distY - rect.height/2;
-    return (dx*dx + dy*dy <= circle.radius*circle.radius);
+    const dx = distX - rect.width / 2;
+    const dy = distY - rect.height / 2;
+    return (dx * dx + dy * dy <= (circle.radius * circle.radius));
+  }
+
+  // Main loop
+  function gameLoop() {
+    if(!gameRunning) return;
+
+    ctx.clearRect(0, 0, width, height);
+
+    player.update();
+    player.draw();
+
+    bullets.forEach((b, i) => {
+      b.update();
+      if(!b.active) bullets.splice(i, 1);
+      else b.draw();
+    });
+
+    enemies.forEach((e, i) => {
+      e.update();
+      if(!e.active) enemies.splice(i, 1);
+      else e.draw();
+
+      // Check enemy/player collision
+      if(collideRect(player, e)) {
+        enemies.splice(i, 1);
+        lives--;
+        drawLives();
+        if(lives <= 0) {
+          gameOver();
+          return;
+        }
+      }
+
+      // Bullet/enemy collisions
+      bullets.forEach((b, bi) => {
+        if(collideCircleRect(b, e)) {
+          enemies.splice(i, 1);
+          bullets.splice(bi, 1);
+          score += 10;
+          scoreEl.textContent = `SCORE: ${score}`;
+        }
+      });
+    });
+
+    updateStars();
+
+    requestAnimationFrame(gameLoop);
   }
 
   // Input handling
@@ -411,12 +388,12 @@
       if(bullet) bullets.push(bullet);
     }
   });
+
   window.addEventListener('keyup', e => {
     if(e.code === 'ArrowLeft' || e.code === 'KeyA') player.moveLeft = false;
     if(e.code === 'ArrowRight' || e.code === 'KeyD') player.moveRight = false;
   });
 
-  // Start game button handler
   startGameBtn.addEventListener('click', () => {
     modalEl.classList.add('hidden');
     resetGame();
@@ -425,10 +402,10 @@
     gameLoop();
   });
 
-  // Initial setup
   drawLives();
   updateStars();
 })();
 </script>
+
 </body>
 </html>
