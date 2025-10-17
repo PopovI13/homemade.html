@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Star Wars Shooter Updated</title>
+<title>Star Wars Shooter Updated with Starfield</title>
 <style>
   body {
     margin: 0; 
@@ -16,7 +16,7 @@
   canvas {
     display: block;
     margin: 0 auto;
-    background: #000;
+    background: black;
   }
   #score {
     position: fixed;
@@ -71,6 +71,31 @@
   const startBtn = document.getElementById('startBtn');
 
   let gameRunning = false;
+
+  // --- Starfield background ---
+  const stars = [];
+  const starCount = 120;
+  for (let i = 0; i < starCount; i++) {
+    stars.push({
+      x: Math.random() * width,
+      y: Math.random() * height,
+      radius: Math.random() * 1.3 + 0.2,
+      speed: Math.random() * 0.6 + 0.2,
+      opacity: Math.random() * 0.8 + 0.2
+    });
+  }
+  function drawStarfield() {
+    ctx.fillStyle = 'black';
+    ctx.fillRect(0, 0, width, height);
+    stars.forEach(star => {
+      star.y += star.speed;
+      if (star.y > height) star.y = 0;
+      ctx.beginPath();
+      ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255, 255, 255, ${star.opacity})`;
+      ctx.fill();
+    });
+  }
 
   // --- Player ---
   class Player {
@@ -372,12 +397,13 @@
       ctx.beginPath();
       for (let i = 0; i < 5; i++) {
         const angle = (i * 2 * Math.PI) / 5 - Math.PI / 2;
-        const x = cx + Math.cos(angle) * 12;
-        const y = cy + Math.sin(angle) * 12;
-        ctx.lineTo(x, y);
-        const nextAngle = angle + Math.PI / 5;
-        const x2 = cx + Math.cos(nextAngle) * 5;
-        const y2 = cy + Math.sin(nextAngle) * 5;
+        const x1 = cx + Math.cos(angle) * 10;
+        const y1 = cy + Math.sin(angle) * 10;
+        const angle2 = angle + Math.PI / 5;
+        const x2 = cx + Math.cos(angle2) * 4;
+        const y2 = cy + Math.sin(angle2) * 4;
+        if (i === 0) ctx.moveTo(x1, y1);
+        else ctx.lineTo(x1, y1);
         ctx.lineTo(x2, y2);
       }
       ctx.closePath();
@@ -395,46 +421,58 @@
   let bonuses = [];
   let score = 0;
   let lives = 3;
+  let waveTimer = 0;
+  const waveInterval = 120;
 
-  // --- Helpers ---
-  function rectCollision(r1, r2) {
+  // --- Input handling ---
+  window.addEventListener('keydown', e => {
+    if (!gameRunning) return;
+    if (e.key === 'ArrowLeft' || e.key.toLowerCase() === 'a') {
+      player.moveLeft = true;
+    }
+    if (e.key === 'ArrowRight' || e.key.toLowerCase() === 'd') {
+      player.moveRight = true;
+    }
+    if (e.key === ' ' || e.key.toLowerCase() === 'w') {
+      player.shoot();
+    }
+  });
+
+  window.addEventListener('keyup', e => {
+    if (e.key === 'ArrowLeft' || e.key.toLowerCase() === 'a') {
+      player.moveLeft = false;
+    }
+    if (e.key === 'ArrowRight' || e.key.toLowerCase() === 'd') {
+      player.moveRight = false;
+    }
+  });
+
+  // --- Collision detection ---
+  function rectIntersect(r1, r2) {
     return !(
-      r1.x > r2.x + r2.width ||
-      r1.x + r1.width < r2.x ||
-      r1.y > r2.y + r2.height ||
-      r1.y + r1.height < r2.y
+      r2.x > r1.x + r1.width ||
+      r2.x + r2.width < r1.x ||
+      r2.y > r1.y + r1.height ||
+      r2.y + r2.height < r1.y
     );
   }
 
-  // --- Spawn Wave ---
-  function spawnWave() {
-    const waveCount = 3 + Math.floor(Math.random() * 3);
-    for (let i = 0; i < waveCount; i++) {
-      const x = Math.random() * (width - 80);
-      const canShoot = Math.random() < 0.35; // 35% enemies shoot
-      const speedMult = canShoot ? 0.7 : (0.9 + Math.random() * 1.4); // slower for shooting enemies
-      enemies.push(new Enemy(x, -60 - Math.random() * 200, speedMult, canShoot));
-    }
-  }
-
-  // --- Collision checks ---
   function checkCollisions() {
-    // Bullets vs enemies
+    // Player bullets vs enemies
     bullets.forEach(bullet => {
-      if (!bullet.active) return;
       enemies.forEach(enemy => {
-        if (!enemy.active) return;
-        const bulletRect = { x: bullet.x - bullet.width / 2, y: bullet.y, width: bullet.width, height: bullet.height };
-        const enemyRect = { x: enemy.x, y: enemy.y, width: enemy.width, height: enemy.height };
-        if (rectCollision(bulletRect, enemyRect)) {
-          bullet.active = false;
-          enemy.active = false;
-          explosions.push(new Explosion(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2));
-          score += 10;
-
-          // Chance to drop bonus
-          if (Math.random() < 0.15) {
-            bonuses.push(new Bonus(enemy.x + enemy.width / 2 - 12, enemy.y + enemy.height / 2 - 12));
+        if (bullet.active && enemy.active) {
+          const enemyRect = {x: enemy.x, y: enemy.y, width: enemy.width, height: enemy.height};
+          const bulletRect = {x: bullet.x - bullet.width / 2, y: bullet.y, width: bullet.width, height: bullet.height};
+          if (rectIntersect(enemyRect, bulletRect)) {
+            bullet.active = false;
+            enemy.active = false;
+            explosions.push(new Explosion(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2));
+            score += 10;
+            // 25% chance to spawn bonus
+            if (Math.random() < 0.25) {
+              bonuses.push(new Bonus(enemy.x + enemy.width / 2 - 12, enemy.y + enemy.height));
+            }
           }
         }
       });
@@ -442,92 +480,90 @@
 
     // Enemy bullets vs player
     enemyBullets.forEach(bullet => {
-      if (!bullet.active) return;
-      const bulletRect = { x: bullet.x - bullet.width / 2, y: bullet.y, width: bullet.width, height: bullet.height };
-      const playerRect = { x: player.x, y: player.y, width: player.width, height: player.height };
-      if (rectCollision(bulletRect, playerRect)) {
-        bullet.active = false;
-        explosions.push(new Explosion(player.x + player.width / 2, player.y + player.height / 2));
-        lives--;
-        livesEl.textContent = `LIVES: ${lives}`;
-        if (lives <= 0) {
-          gameOver();
+      if (bullet.active) {
+        const playerRect = {x: player.x, y: player.y, width: player.width, height: player.height};
+        const bulletRect = {x: bullet.x - bullet.width / 2, y: bullet.y, width: bullet.width, height: bullet.height};
+        if (rectIntersect(playerRect, bulletRect)) {
+          bullet.active = false;
+          explosions.push(new Explosion(player.x + player.width / 2, player.y + player.height / 2));
+          lives--;
+          livesEl.textContent = `LIVES: ${lives}`;
+          if (lives <= 0) {
+            gameOver();
+          }
         }
       }
     });
 
-    // Player vs bonuses
+    // Bonuses vs player
     bonuses.forEach(bonus => {
-      if (!bonus.active) return;
-      const bonusRect = { x: bonus.x, y: bonus.y, width: bonus.width, height: bonus.height };
-      const playerRect = { x: player.x, y: player.y, width: player.width, height: player.height };
-      if (rectCollision(bonusRect, playerRect)) {
-        bonus.active = false;
-        score += 50;
+      if (bonus.active) {
+        const playerRect = {x: player.x, y: player.y, width: player.width, height: player.height};
+        const bonusRect = {x: bonus.x, y: bonus.y, width: bonus.width, height: bonus.height};
+        if (rectIntersect(playerRect, bonusRect)) {
+          bonus.active = false;
+          score += 50;
+          lives = Math.min(lives + 1, 5);
+          livesEl.textContent = `LIVES: ${lives}`;
+        }
       }
     });
+  }
+
+  // --- Spawn enemy wave ---
+  function spawnWave() {
+    const count = Math.floor(Math.random() * 3) + 3;
+    const spacing = width / (count + 1);
+    for (let i = 1; i <= count; i++) {
+      let canShoot = Math.random() < 0.3; // 30% enemies shoot
+      enemies.push(new Enemy(spacing * i - 20, -50, 0.6, canShoot));
+    }
   }
 
   // --- Game over ---
   function gameOver() {
     gameRunning = false;
+    alert(`Game Over!\nFinal Score: ${score}`);
     startBtn.style.display = 'block';
-    alert(`Game Over! Your score: ${score}`);
   }
 
-  // --- Event listeners ---
-  window.addEventListener('keydown', e => {
-    if (!gameRunning) return;
-    if (e.code === 'ArrowLeft' || e.code === 'KeyA') player.moveLeft = true;
-    if (e.code === 'ArrowRight' || e.code === 'KeyD') player.moveRight = true;
-    if (e.code === 'Space') player.shoot();
-  });
-  window.addEventListener('keyup', e => {
-    if (!gameRunning) return;
-    if (e.code === 'ArrowLeft' || e.code === 'KeyA') player.moveLeft = false;
-    if (e.code === 'ArrowRight' || e.code === 'KeyD') player.moveRight = false;
-  });
-
-  startBtn.addEventListener('click', () => {
-    startBtn.style.display = 'none';
-    startGame();
-  });
-
-  // --- Game Loop ---
-  let waveTimer = 0;
-  let waveInterval = 150;
-
+  // --- Game loop ---
   function gameLoop() {
     if (!gameRunning) return;
 
-    ctx.clearRect(0, 0, width, height);
+    drawStarfield();
 
     player.update();
     player.draw();
 
-    bullets.forEach(b => {
-      b.update();
-      b.draw();
+    bullets.forEach(bullet => {
+      bullet.update();
+      bullet.draw();
     });
-    bullets = bullets.filter(b => b.active);
+    bullets = bullets.filter(bullet => bullet.active);
 
-    enemies.forEach(e => {
-      e.update();
-      e.draw();
+    enemies.forEach(enemy => {
+      enemy.update();
     });
-    enemies = enemies.filter(e => e.active);
+    enemies = enemies.filter(enemy => enemy.active);
 
-    enemyBullets.forEach(b => {
-      b.update();
-      b.draw();
+    enemyBullets.forEach(bullet => {
+      bullet.update();
+      bullet.draw();
     });
-    enemyBullets = enemyBullets.filter(b => b.active);
+    enemyBullets = enemyBullets.filter(bullet => bullet.active);
 
-    explosions.forEach(ex => {
-      ex.update();
-      ex.draw();
+    // Draw enemies back first (for 3D effect)
+    enemies.forEach(enemy => enemy.drawBack());
+    // Then player bullets over enemies back, then enemies front
+    bullets.forEach(bullet => bullet.draw());
+    enemies.forEach(enemy => enemy.drawFront());
+
+    explosions.forEach(explosion => {
+      explosion.update();
+      explosion.draw();
     });
-    explosions = explosions.filter(ex => ex.active);
+    explosions = explosions.filter(explosion => explosion.active);
 
     bonuses.forEach(bonus => {
       bonus.update();
@@ -537,7 +573,6 @@
 
     checkCollisions();
 
-    // Spawn waves periodically
     waveTimer++;
     if (waveTimer > waveInterval) {
       spawnWave();
@@ -549,6 +584,7 @@
     requestAnimationFrame(gameLoop);
   }
 
+  // --- Start game ---
   function startGame() {
     player = new Player();
     bullets = [];
@@ -562,8 +598,11 @@
     livesEl.textContent = `LIVES: ${lives}`;
     waveTimer = 0;
     gameRunning = true;
+    startBtn.style.display = 'none';
     gameLoop();
   }
+
+  startBtn.addEventListener('click', startGame);
 })();
 </script>
 
