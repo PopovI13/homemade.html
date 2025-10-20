@@ -3,330 +3,714 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Simple Shooter Game</title>
+<title>Star Wars Shooter Fullscreen - Bonuses Update</title>
 <style>
   body {
     margin: 0;
-    background: #000;
     overflow: hidden;
+    background: black;
+    color: white;
+    font-family: 'Arial', sans-serif;
+    user-select: none;
   }
   canvas {
     display: block;
-    margin: auto;
-    background: #111;
+    background: black;
   }
-  #info {
+  #score {
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    font-size: 20px;
+    letter-spacing: 2px;
+    z-index: 10;
+  }
+  #lives {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    font-size: 20px;
+    letter-spacing: 2px;
+    z-index: 10;
+  }
+  #startBtn {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 28px;
+    padding: 12px 25px;
+    background: #007acc;
+    border: none;
+    border-radius: 8px;
     color: white;
-    font-family: monospace;
-    text-align: center;
-    margin: 5px;
+    cursor: pointer;
+    user-select: none;
+    z-index: 10;
+    white-space: nowrap;
+  }
+  #startBtn:hover {
+    background: #005f99;
   }
 </style>
 </head>
 <body>
-<div id="info">Use Arrow Keys to move, Space to shoot</div>
-<canvas id="game"></canvas>
+
+<div id="score">SCORE: 0</div>
+<div id="lives">LIVES: 3</div>
+<button id="startBtn">START GAME</button>
+
+<canvas id="gameCanvas"></canvas>
 
 <script>
-// Set up canvas and context
-const canvas = document.getElementById('game');
-const ctx = canvas.getContext('2d');
-canvas.width = 600;
-canvas.height = 400;
+(() => {
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
 
-// Game state variables
-let keys = {};
-let bullets = [];
-let enemies = [];
-let bonuses = [];
-let explosions = [];
-let trails = [];
-let score = 0;
-let lives = 3;
-let gameOver = false;
-let lastEnemySpawn = 0;
-let enemySpawnInterval = 1500;
-let lastBonusSpawn = 0;
-let bonusSpawnInterval = 10000;
-let playerSpeed = 3;
-let rapidFire = false;
-let rapidFireTimeout = null;
-let megaExplosion = false;
-let megaExplosionTimeout = null;
-let shakeDuration = 0;
+  let width = window.innerWidth;
+  let height = window.innerHeight;
 
-// Player object
-const player = {
-  x: canvas.width / 2 - 15,
-  y: canvas.height - 50,
-  width: 30,
-  height: 30,
-  speed: playerSpeed,
-  color: 'cyan',
-  canShoot: true,
-  shootCooldown: 400,
-  lastShot: 0
-};
+  canvas.width = width;
+  canvas.height = height;
 
-// Keyboard events
-window.addEventListener('keydown', e => {
-  keys[e.code] = true;
-});
+  const scoreEl = document.getElementById('score');
+  const livesEl = document.getElementById('lives');
+  const startBtn = document.getElementById('startBtn');
 
-window.addEventListener('keyup', e => {
-  keys[e.code] = false;
-});
+  let gameRunning = false;
 
-// Utility functions
-function rectsCollide(r1, r2) {
-  return !(
-    r1.x > r2.x + r2.width ||
-    r1.x + r1.width < r2.x ||
-    r1.y > r2.y + r2.height ||
-    r1.y + r1.height < r2.y
-  );
-}
+  // --- Starfield background ---
+  let stars = [];
+  const starCount = 200;
 
-function spawnEnemy() {
-  const size = 25;
-  enemies.push({
-    x: Math.random() * (canvas.width - size),
-    y: -size,
-    width: size,
-    height: size,
-    speed: 2 + Math.random() * 1.5,
-    color: 'red'
-  });
-}
-
-function spawnBonus() {
-  const size = 20;
-  const types = ['speed', 'rapid', 'mega'];
-  const type = types[Math.floor(Math.random() * types.length)];
-  bonuses.push({
-    x: Math.random() * (canvas.width - size),
-    y: -size,
-    width: size,
-    height: size,
-    speed: 1.5,
-    type,
-    color: type === 'speed' ? 'lime' : (type === 'rapid' ? 'yellow' : 'magenta')
-  });
-}
-
-function addExplosion(x, y) {
-  explosions.push({
-    x,
-    y,
-    radius: 0,
-    maxRadius: 40,
-    alpha: 1
-  });
-  shakeDuration = 10;
-}
-
-function drawPlayer() {
-  ctx.fillStyle = player.color;
-  ctx.fillRect(player.x, player.y, player.width, player.height);
-}
-
-function drawBullets() {
-  ctx.fillStyle = 'white';
-  bullets.forEach(b => ctx.fillRect(b.x, b.y, b.width, b.height));
-}
-
-function drawEnemies() {
-  enemies.forEach(e => {
-    ctx.fillStyle = e.color;
-    ctx.fillRect(e.x, e.y, e.width, e.height);
-  });
-}
-
-function drawBonuses() {
-  bonuses.forEach(b => {
-    ctx.fillStyle = b.color;
-    ctx.fillRect(b.x, b.y, b.width, b.height);
-  });
-}
-
-function drawExplosions() {
-  explosions.forEach(exp => {
-    ctx.beginPath();
-    ctx.fillStyle = `rgba(255,165,0,${exp.alpha})`;
-    ctx.arc(exp.x, exp.y, exp.radius, 0, Math.PI * 2);
-    ctx.fill();
-  });
-}
-
-function drawHUD() {
-  ctx.fillStyle = 'white';
-  ctx.font = '18px monospace';
-  ctx.fillText(`Score: ${score}`, 10, 20);
-  ctx.fillText(`Lives: ${lives}`, 10, 40);
-  if (rapidFire) ctx.fillText('Rapid Fire ON', 10, 60);
-  if (megaExplosion) ctx.fillText('Mega Explosion ON', 10, 80);
-  if (playerSpeed > 3) ctx.fillText('Speed Boost ON', 10, 100);
-}
-
-// Update functions
-function updatePlayer() {
-  if (keys['ArrowLeft'] && player.x > 0) {
-    player.x -= player.speed;
-  }
-  if (keys['ArrowRight'] && player.x + player.width < canvas.width) {
-    player.x += player.speed;
-  }
-  if (keys['ArrowUp'] && player.y > 0) {
-    player.y -= player.speed;
-  }
-  if (keys['ArrowDown'] && player.y + player.height < canvas.height) {
-    player.y += player.speed;
-  }
-  if (keys['Space']) {
-    const now = Date.now();
-    if (player.canShoot && now - player.lastShot > player.shootCooldown) {
-      bullets.push({
-        x: player.x + player.width / 2 - 3,
-        y: player.y,
-        width: 6,
-        height: 12,
-        speed: 7,
-        color: 'white'
+  function initStars() {
+    stars = [];
+    for (let i = 0; i < starCount; i++) {
+      stars.push({
+        x: Math.random() * width,
+        y: Math.random() * height,
+        radius: Math.random() * 1.3 + 0.2,
+        speed: Math.random() * 0.9 + 0.4,
+        opacity: Math.random() * 0.8 + 0.2
       });
-      player.lastShot = now;
     }
   }
-}
+  initStars();
 
-function updateBullets() {
-  bullets = bullets.filter(b => b.y + b.height > 0);
-  bullets.forEach(b => b.y -= b.speed);
-}
+  function drawStarfield() {
+    ctx.fillStyle = 'black';
+    ctx.fillRect(0, 0, width, height);
+    stars.forEach(star => {
+      star.y += star.speed;
+      if (star.y > height) star.y = 0;
+      ctx.beginPath();
+      ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255, 255, 255, ${star.opacity})`;
+      ctx.fill();
+    });
+  }
 
-function updateEnemies() {
-  enemies.forEach(e => e.y += e.speed);
-  enemies = enemies.filter(e => e.y < canvas.height + e.height);
-}
+  // --- Player ---
+  class Player {
+    constructor() {
+      this.width = 50;
+      this.height = 40;
+      this.x = width / 2 - this.width / 2;
+      this.y = height - this.height - 10;
+      this.speed = 14;
+      this.moveLeft = false;
+      this.moveRight = false;
+      this.canShoot = true;
+      this.shootCooldown = 10;
+      this.shootTimer = 0;
+      this.color = '#00bfff'; // blueish
 
-function updateBonuses() {
-  bonuses.forEach(b => b.y += b.speed);
-  bonuses = bonuses.filter(b => b.y < canvas.height + b.height);
-}
+      // NEW: Bonuses states
+      this.tripleShotActive = false;
+      this.tripleShotDuration = 0;
+      this.shieldActive = false;
+    }
+    update() {
+      if (this.moveLeft && this.x > 0) this.x -= this.speed;
+      if (this.moveRight && this.x + this.width < width) this.x += this.speed;
 
-function updateExplosions() {
-  explosions.forEach((exp, i) => {
-    exp.radius += 3;
-    exp.alpha -= 0.05;
-    if (exp.alpha <= 0) explosions.splice(i, 1);
+      if (!this.canShoot) {
+        this.shootTimer++;
+        if (this.shootTimer >= this.shootCooldown) {
+          this.shootTimer = 0;
+          this.canShoot = true;
+        }
+      }
+
+      // Decrease triple shot timer
+      if (this.tripleShotActive) {
+        this.tripleShotDuration--;
+        if (this.tripleShotDuration <= 0) {
+          this.tripleShotActive = false;
+        }
+      }
+    }
+    draw() {
+      ctx.save();
+      // Draw shield if active
+      if (this.shieldActive) {
+        ctx.strokeStyle = '#00ffdd';
+        ctx.lineWidth = 6;
+        ctx.shadowColor = '#00ffdd';
+        ctx.shadowBlur = 25;
+        ctx.beginPath();
+        ctx.ellipse(this.x + this.width / 2, this.y + this.height / 2, this.width * 0.8, this.height * 1.2, 0, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+
+      ctx.fillStyle = '#00bfff';
+      ctx.shadowColor = '#00bfff';
+      ctx.shadowBlur = 20;
+
+      ctx.beginPath();
+      ctx.moveTo(this.x + this.width / 2, this.y);
+      ctx.lineTo(this.x + this.width, this.y + this.height);
+      ctx.lineTo(this.x, this.y + this.height);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.fillStyle = '#00e0ff';
+      ctx.arc(this.x + this.width / 2, this.y + this.height / 2, 8, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.restore();
+    }
+    shoot() {
+      if (!this.canShoot) return;
+
+      if (this.tripleShotActive) {
+        bullets.push(new Bullet(this.x + this.width / 2, this.y));
+        bullets.push(new Bullet(this.x + this.width / 2 - 15, this.y + 10, -4)); // left offset with angle
+        bullets.push(new Bullet(this.x + this.width / 2 + 15, this.y + 10, 4));  // right offset with angle
+      } else {
+        bullets.push(new Bullet(this.x + this.width / 2, this.y));
+      }
+
+      this.canShoot = false;
+      this.shootTimer = 0;
+    }
+  }
+
+  // --- Player Bullet (blue laser beam) ---
+  class Bullet {
+    constructor(x, y, xVel = 0) {
+      this.x = x;
+      this.y = y;
+      this.width = 4;
+      this.height = 18;
+      this.speed = 28;
+      this.color = '#00bfff';
+      this.xVel = xVel; // for triple shot side bullets
+      this.active = true;
+    }
+    update() {
+      this.y -= this.speed;
+      this.x += this.xVel; // side movement for triple shot bullets
+      if (this.y + this.height < 0 || this.x < 0 || this.x > width) this.active = false;
+    }
+    draw() {
+      ctx.save();
+      ctx.fillStyle = this.color;
+      ctx.shadowColor = this.color;
+      ctx.shadowBlur = 20;
+      ctx.fillRect(this.x - this.width / 2, this.y, this.width, this.height);
+      ctx.restore();
+    }
+  }
+
+  // --- Enemy ---
+  class Enemy {
+    constructor(x, y, speedMultiplier = 1, canShoot = false) {
+      this.x = x;
+      this.y = y;
+      this.speed = 2.5 * speedMultiplier;
+      this.canShoot = canShoot;
+      this.type = Math.random() < 0.5 ? 'tie' : 'starDestroyer';
+      this.width = this.type === 'tie' ? 40 : 70;
+      this.height = this.type === 'tie' ? 40 : 30;
+      this.color = this.type === 'tie' ? '#8888ff' : '#bb8866';
+      this.active = true;
+      this.blinkTimer = 0;
+
+      this.shootCooldown = canShoot ? 100 : Infinity;
+      this.shootTimer = 0;
+    }
+    update() {
+      this.y += this.speed;
+      if (this.y > height) this.active = false;
+      this.blinkTimer += 0.05;
+
+      if (this.canShoot) {
+        this.shootTimer++;
+        if (this.shootTimer >= this.shootCooldown) {
+          this.shootTimer = 0;
+          enemyBullets.push(new EnemyBullet(this.x + this.width / 2, this.y + this.height));
+        }
+      }
+    }
+    drawBack() {
+      ctx.save();
+      ctx.translate(this.x + this.width / 2, this.y + this.height / 2);
+      ctx.rotate(Math.PI);
+      ctx.shadowColor = this.color;
+      ctx.shadowBlur = 12;
+      ctx.globalAlpha = 0.8 + 0.2 * Math.sin(this.blinkTimer * 10);
+
+      if (this.type === 'tie') {
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        ctx.arc(0, 0, 8, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#4444aa';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.rect(-25, -15, 10, 30);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.rect(15, -15, 10, 30);
+        ctx.fill();
+        ctx.stroke();
+      } else if (this.type === 'starDestroyer') {
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        ctx.moveTo(-this.width / 2, this.height / 2);
+        ctx.lineTo(this.width / 2, this.height / 2);
+        ctx.lineTo(0, -this.height / 2);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = '#664422';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        ctx.fillStyle = '#fff';
+        for (let i = -20; i <= 20; i += 10) {
+          ctx.fillRect(i, -10, 3, 4);
+        }
+      }
+
+      ctx.globalAlpha = 1;
+      ctx.shadowBlur = 0;
+      ctx.restore();
+    }
+    drawFront() {
+      ctx.save();
+      ctx.translate(this.x + this.width / 2, this.y + this.height / 2);
+      ctx.shadowColor = this.color;
+      ctx.shadowBlur = 12;
+      ctx.globalAlpha = 0.8 + 0.2 * Math.sin(this.blinkTimer * 10);
+
+      if (this.type === 'tie') {
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        ctx.arc(0, 0, 10, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#4444aa';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.rect(-30, -18, 12, 36);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.rect(18, -18, 12, 36);
+        ctx.fill();
+        ctx.stroke();
+      } else if (this.type === 'starDestroyer') {
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        ctx.moveTo(-this.width / 2, this.height / 2);
+        ctx.lineTo(this.width / 2, this.height / 2);
+        ctx.lineTo(0, -this.height / 2);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = '#664422';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        ctx.fillStyle = '#fff';
+        for (let i = -22; i <= 22; i += 11) {
+          ctx.fillRect(i, -12, 4, 5);
+        }
+      }
+
+      ctx.globalAlpha = 1;
+      ctx.shadowBlur = 0;
+      ctx.restore();
+    }
+  }
+
+  // --- Enemy Bullet ---
+  class EnemyBullet {
+    constructor(x, y) {
+      this.x = x;
+      this.y = y;
+      this.width = 5;
+      this.height = 12;
+      this.speed = 13;
+      this.color = '#ff6600';
+      this.active = true;
+    }
+    update() {
+      this.y += this.speed;
+      if (this.y > height) this.active = false;
+    }
+    draw() {
+      ctx.save();
+      ctx.fillStyle = this.color;
+      ctx.shadowColor = this.color;
+      ctx.shadowBlur = 15;
+      ctx.fillRect(this.x - this.width / 2, this.y, this.width, this.height);
+      ctx.restore();
+    }
+  }
+
+  // --- Bonuses ---
+  // Types: 'life', 'tripleShot', 'shield'
+  class Bonus {
+    constructor(x, y, type) {
+      this.x = x;
+      this.y = y;
+      this.width = 30;
+      this.height = 30;
+      this.speed = 5;
+      this.active = true;
+      this.type = type;
+      this.blinkTimer = 0;
+    }
+    update() {
+      this.y += this.speed;
+      if (this.y > height) this.active = false;
+      this.blinkTimer += 0.1;
+    }
+    draw() {
+      ctx.save();
+      ctx.shadowBlur = 15;
+
+      if (this.type === 'life') {
+        ctx.fillStyle = '#00ff99';
+        ctx.shadowColor = '#00ff99';
+
+        ctx.beginPath();
+        // Heart shape
+        let topCurveHeight = this.height * 0.3;
+        ctx.moveTo(this.x + this.width / 2, this.y + this.height * 0.9);
+        ctx.bezierCurveTo(this.x + this.width / 2 + this.width / 2, this.y + this.height * 0.6, this.x + this.width / 2 + this.width / 4, this.y + this.height * 0.1, this.x + this.width / 2, this.y + topCurveHeight);
+        ctx.bezierCurveTo(this.x + this.width / 2 - this.width / 4, this.y + this.height * 0.1, this.x + this.width / 2 - this.width / 2, this.y + this.height * 0.6, this.x + this.width / 2, this.y + this.height * 0.9);
+        ctx.closePath();
+        ctx.fill();
+      } else if (this.type === 'tripleShot') {
+        ctx.fillStyle = '#0099ff';
+        ctx.shadowColor = '#0099ff';
+
+        // Draw three upward arrows representing triple shot
+        let centerX = this.x + this.width / 2;
+        let centerY = this.y + this.height / 2;
+
+        for (let i = -1; i <= 1; i++) {
+          ctx.beginPath();
+          ctx.moveTo(centerX + i * 10, centerY + 12);
+          ctx.lineTo(centerX + i * 10 - 6, centerY - 10);
+          ctx.lineTo(centerX + i * 10 + 6, centerY - 10);
+          ctx.closePath();
+          ctx.fill();
+        }
+      } else if (this.type === 'shield') {
+        ctx.fillStyle = '#00ffff';
+        ctx.shadowColor = '#00ffff';
+
+        // Draw shield shape (circle with glow)
+        ctx.beginPath();
+        ctx.ellipse(this.x + this.width / 2, this.y + this.height / 2, this.width * 0.4, this.height * 0.55, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.fillStyle = '#008888';
+        ctx.ellipse(this.x + this.width / 2, this.y + this.height / 2 + 3, this.width * 0.3, this.height * 0.4, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      ctx.restore();
+    }
+  }
+
+  // --- Explosion ---
+  class Explosion {
+    constructor(x, y) {
+      this.x = x;
+      this.y = y;
+      this.radius = 5;
+      this.alpha = 1;
+      this.active = true;
+    }
+    update() {
+      this.radius += 3.2;
+      this.alpha -= 0.07;
+      if (this.alpha <= 0) this.active = false;
+    }
+    draw() {
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255, 150, 0, ${this.alpha})`;
+      ctx.shadowColor = `rgba(255, 100, 0, ${this.alpha})`;
+      ctx.shadowBlur = 20;
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  // --- Game variables ---
+  let player = new Player();
+  let bullets = [];
+  let enemies = [];
+  let enemyBullets = [];
+  let explosions = [];
+  let bonuses = [];
+
+  let score = 0;
+  let lives = 3;
+
+  // --- Input handling ---
+  window.addEventListener('keydown', e => {
+    if (e.code === 'ArrowLeft' || e.key === 'a' || e.key === 'A') player.moveLeft = true;
+    if (e.code === 'ArrowRight' || e.key === 'd' || e.key === 'D') player.moveRight = true;
+    if (e.code === 'Space') player.shoot();
   });
-}
+  window.addEventListener('keyup', e => {
+    if (e.code === 'ArrowLeft' || e.key === 'a' || e.key === 'A') player.moveLeft = false;
+    if (e.code === 'ArrowRight' || e.key === 'd' || e.key === 'D') player.moveRight = false;
+  });
 
-function checkCollisions() {
-  // Bullet hits enemy
-  bullets.forEach((b, bi) => {
-    enemies.forEach((e, ei) => {
-      if (rectsCollide(b, e)) {
-        addExplosion(e.x + e.width/2, e.y + e.height/2);
-        score += 10;
-        enemies.splice(ei, 1);
-        bullets.splice(bi, 1);
+  // --- Utility ---
+  function rectIntersect(r1, r2) {
+    return !(
+      r2.x > r1.x + r1.width ||
+      r2.x + r2.width < r1.x ||
+      r2.y > r1.y + r1.height ||
+      r2.y + r2.height < r1.y
+    );
+  }
+
+  // --- Spawn enemies ---
+  let enemySpawnTimer = 0;
+  const enemySpawnInterval = 50;
+
+  function spawnEnemy() {
+    let x = Math.random() * (width - 70);
+    let canShoot = Math.random() < 0.3;
+    let speedMul = 1 + Math.random() * 0.4;
+    enemies.push(new Enemy(x, -50, speedMul, canShoot));
+  }
+
+  // --- Spawn bonuses ---
+  let bonusSpawnTimer = 0;
+  const bonusSpawnInterval =220; // more frequent bonuses now
+
+  function spawnBonus() {
+    let x = Math.random() * (width - 30);
+    let typeRand = Math.random();
+    let type;
+    if (typeRand < 0.4) type = 'life';
+    else if (typeRand < 0.7) type = 'tripleShot';
+    else type = 'shield';
+    bonuses.push(new Bonus(x, -30, type));
+  }
+
+  // --- Game loop ---
+  function gameLoop() {
+    if (!gameRunning) return;
+
+    drawStarfield();
+
+    player.update();
+    player.draw();
+
+    bullets.forEach(b => {
+      b.update();
+      b.draw();
+    });
+    bullets = bullets.filter(b => b.active);
+
+    enemies.forEach(e => {
+      e.update();
+      e.drawBack();
+    });
+
+    enemies.forEach(e => {
+      if (e.canShoot && e.shootTimer < 10) {
+        e.drawFront();
       }
     });
-  });
+    enemies = enemies.filter(e => e.active);
 
-  // Enemy hits player
-  enemies.forEach((e, ei) => {
-    if (rectsCollide(e, player)) {
-      addExplosion(player.x + player.width/2, player.y + player.height/2);
-      lives--;
-      enemies.splice(ei, 1);
-      if (lives <= 0) gameOver = true;
+    enemyBullets.forEach(eb => {
+      eb.update();
+      eb.draw();
+    });
+    enemyBullets = enemyBullets.filter(eb => eb.active);
+
+    bonuses.forEach(bonus => {
+      bonus.update();
+      bonus.draw();
+    });
+    bonuses = bonuses.filter(b => b.active);
+
+    explosions.forEach(exp => {
+      exp.update();
+      exp.draw();
+    });
+    explosions = explosions.filter(exp => exp.active);
+
+    // Spawn enemies
+    enemySpawnTimer++;
+    if (enemySpawnTimer >= enemySpawnInterval) {
+      enemySpawnTimer = 0;
+      spawnEnemy();
     }
-  });
 
-  // Player collects bonus
-  bonuses.forEach((b, bi) => {
-    if (rectsCollide(b, player)) {
-      if (b.type === 'speed') {
-        player.speed = 6;
-        setTimeout(() => player.speed = 3, 5000);
-      }
-      if (b.type === 'rapid') {
-        player.shootCooldown = 100;
-        setTimeout(() => player.shootCooldown = 400, 5000);
-      }
-      if (b.type === 'mega') {
-        megaExplosion = true;
-        setTimeout(() => megaExplosion = false, 5000);
-      }
-      bonuses.splice(bi, 1);
+    // Spawn bonuses
+    bonusSpawnTimer++;
+    if (bonusSpawnTimer >= bonusSpawnInterval) {
+      bonusSpawnTimer = 0;
+      spawnBonus();
     }
-  });
-}
 
-function gameLoop(timestamp) {
-  if (gameOver) {
-    ctx.fillStyle = 'white';
-    ctx.font = '48px monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText('GAME OVER', canvas.width / 2, canvas.height / 2);
-    ctx.font = '24px monospace';
-    ctx.fillText(`Score: ${score}`, canvas.width / 2, canvas.height / 2 + 40);
-    return;
+    // Bullets vs Enemies
+    bullets.forEach(b => {
+      enemies.forEach(e => {
+        if (
+          b.active &&
+          e.active &&
+          rectIntersect({x: b.x - b.width / 2, y: b.y, width: b.width, height: b.height}, {x: e.x, y: e.y, width: e.width, height: e.height})
+        ) {
+          b.active = false;
+          e.active = false;
+          score += 10;
+          explosions.push(new Explosion(e.x + e.width / 2, e.y + e.height / 2));
+          // 20% chance to drop bonus on enemy death
+          if (Math.random() < 0.2) {
+            spawnBonus();
+          }
+        }
+      });
+    });
+
+    // Enemy bullets vs Player
+    enemyBullets.forEach(eb => {
+      if (
+        eb.active &&
+        rectIntersect(
+          {x: eb.x - eb.width / 2, y: eb.y, width: eb.width, height: eb.height},
+          {x: player.x, y: player.y, width: player.width, height: player.height}
+        )
+      ) {
+        eb.active = false;
+
+        // Shield absorbs one hit if active
+        if (player.shieldActive) {
+          player.shieldActive = false;
+        } else {
+          lives--;
+          explosions.push(new Explosion(player.x + player.width / 2, player.y + player.height / 2));
+          if (lives <= 0) {
+            gameOver();
+          }
+        }
+      }
+    });
+
+    // Enemies vs Player (collision)
+    enemies.forEach(e => {
+      if (
+        e.active &&
+        rectIntersect(
+          {x: e.x, y: e.y, width: e.width, height: e.height},
+          {x: player.x, y: player.y, width: player.width, height: player.height}
+        )
+      ) {
+        e.active = false;
+        if (player.shieldActive) {
+          player.shieldActive = false;
+        } else {
+          lives--;
+          explosions.push(new Explosion(player.x + player.width / 2, player.y + player.height / 2));
+          if (lives <= 0) {
+            gameOver();
+          }
+        }
+      }
+    });
+
+    // Player vs Bonuses
+    bonuses.forEach(bonus => {
+      if (
+        bonus.active &&
+        rectIntersect(
+          {x: bonus.x, y: bonus.y, width: bonus.width, height: bonus.height},
+          {x: player.x, y: player.y, width: player.width, height: player.height}
+        )
+      ) {
+        bonus.active = false;
+        if (bonus.type === 'life') {
+          lives++;
+        } else if (bonus.type === 'tripleShot') {
+          player.tripleShotActive = true;
+          player.tripleShotDuration = 600; // 10 seconds at 60fps
+        } else if (bonus.type === 'shield') {
+          player.shieldActive = true;
+        }
+      }
+    });
+
+    // Update UI
+    scoreEl.textContent = `SCORE: ${score}`;
+    livesEl.textContent = `LIVES: ${lives}`;
+
+    requestAnimationFrame(gameLoop);
   }
 
-  // Shake effect
-  if (shakeDuration > 0) {
-    const dx = (Math.random() - 0.5) * 10;
-    const dy = (Math.random() - 0.5) * 10;
-    ctx.setTransform(1, 0, 0, 1, dx, dy);
-    shakeDuration--;
-  } else {
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
+  function gameOver() {
+    gameRunning = false;
+    startBtn.textContent = `GAME OVER! SCORE: ${score} - RESTART?`;
+    startBtn.style.display = 'block';
   }
 
-  // Clear screen
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  // Spawn enemies and bonuses
-  if (timestamp - lastEnemySpawn > enemySpawnInterval) {
-    spawnEnemy();
-    lastEnemySpawn = timestamp;
-  }
-  if (timestamp - lastBonusSpawn > bonusSpawnInterval) {
-    spawnBonus();
-    lastBonusSpawn = timestamp;
-  }
-
-  // Update everything
-  updatePlayer();
-  updateBullets();
-  updateEnemies();
-  updateBonuses();
-  updateExplosions();
-  checkCollisions();
-
-  // Mega explosion effect (destroy all enemies on screen)
-  if (megaExplosion) {
-    enemies.forEach(e => addExplosion(e.x + e.width/2, e.y + e.height/2));
+  function startGame() {
+    // Reset everything
+    player = new Player();
+    bullets = [];
     enemies = [];
+    enemyBullets = [];
+    explosions = [];
+    bonuses = [];
+    score = 0;
+    lives = 3;
+    enemySpawnTimer = 0;
+    bonusSpawnTimer = 0;
+    gameRunning = true;
+    startBtn.style.display = 'none';
+    gameLoop();
   }
 
-  // Draw everything
-  drawPlayer();
-  drawBullets();
-  drawEnemies();
-  drawBonuses();
-  drawExplosions();
-  drawHUD();
+  startBtn.addEventListener('click', startGame);
 
-  requestAnimationFrame(gameLoop);
-}
-
-// Start the game
-requestAnimationFrame(gameLoop);
-
-</script>
-</body>
-</html>
-
+  window.addEventListener('resize', () => {
+    width = window.innerWidth;
+    height = window.innerHeight;
+    canvas.width = width;
+    canvas.height = height;
+    initStars();
+  });
+})();
