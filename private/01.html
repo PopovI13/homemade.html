@@ -828,7 +828,25 @@
 
   startBtn.addEventListener('click', startGame);
 })();
-</script>
 
-</body>
-</html>
+        // Check bonuses collected by player
+bonuses.forEach((bonus, index) => {
+  const dx = bonus.x - (player.x + player.width / 2);
+  const dy = bonus.y - (player.y + player.height / 2);
+  const distance = Math.sqrt(dx * dx + dy * dy);
+
+  if (distance < bonus.radius + Math.min(player.width, player.height) / 2) {
+    bonus.active = false;
+
+    // Apply bonus effect
+    if (bonus.type === 'life') {
+      lives++;
+      livesEl.textContent = `LIVES: ${lives}`;
+    } else if (bonus.type === 'shield') {
+      player.shieldActive = true;
+    } else if (bonus.type === 'triple') {
+      player.tripleShotActive = true;
+      player.tripleShotDuration = 600; // e.g. lasts 10 seconds at 60fps
+    }
+  }
+});
