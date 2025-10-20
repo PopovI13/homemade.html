@@ -82,9 +82,38 @@
     &copy; 2025 Illia. All rights reserved.
   </footer>
 
-  <div class="theme-toggle">
-    <input id="themeToggleBtn" type="button" value="🌚 Dark Mode" onclick="toggleTheme()" />
-  </div>
+<div class="theme-toggle">
+  <button id="themeToggleBtn" onclick="toggleTheme()">🌚 Dark Mode</button>
+</div>
+.theme-toggle button {
+  padding: 12px 30px;
+  font-size: 1.1em;
+  font-weight: bold;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  background-color: #007acc;
+  color: white;
+  box-shadow: 0 4px 8px rgba(0, 122, 204, 0.3);
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.theme-toggle button:hover {
+  background-color: #005fa3;
+  box-shadow: 0 6px 12px rgba(0, 95, 163, 0.4);
+}
+
+/* Dark mode button styles */
+body.dark .theme-toggle button {
+  background-color: #444;
+  color: #eee;
+  box-shadow: 0 4px 8px rgba(68, 68, 68, 0.6);
+}
+
+body.dark .theme-toggle button:hover {
+  background-color: #666;
+  box-shadow: 0 6px 12px rgba(102, 102, 102, 0.8);
+}
 
   <script>
     function toggleTheme() {
