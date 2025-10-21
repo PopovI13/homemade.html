@@ -1,1 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>AI Image Generator</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #1a1a1a;
+      color: white;
+      text-align: center;
+      padding: 2rem;
+    }
+    input, button {
+      padding: 10px;
+      font-size: 1rem;
+      width: 300px;
+      margin: 10px;
+    }
+    img {
+      margin-top: 20px;
+      max-width: 100%;
+      border: 2px solid #444;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>AI Image Generator (DALL·E)</h1>
+  <input type="text" id="prompt" placeholder="Describe your image..." />
+  <br>
+  <button onclick="generateImage()">Generate Image</button>
+  <br>
+  <div id="loading" style="display:none;">⏳ Generating image...</div>
+  <img id="image" src="" alt="" />
+
+  <script>
+    async function generateImage() {
+      const prompt = document.getElementById('prompt').value;
+      const image = document.getElementById('image');
+      const loading = document.getElementById('loading');
+      
+      if (!prompt) {
+        alert("Please enter a prompt.");
+        return;
+      }
+
+      image.src = "";
+      loading.style.display = "block";
+
+      try {
+        const response = await fetch("https://api.openai.com/v1/images/generations", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer YOUR_API_KEY_HERE" // 🔴 Replace with your key for testing
+          },
+          body: JSON.stringify({
+            prompt: prompt,
+            n: 1,
+            size: "512x512"
+          })
+        });
+
+        const data = await response.json();
+        const url = data.data[0].url;
+        image.src = url;
+      } catch (error) {
+        console.error("Error generating image:", error);
+        alert("Something went wrong.");
+      } finally {
+        loading.style.display = "none";
+      }
+    }
+  </script>
+
+</body>
+</html>
 
