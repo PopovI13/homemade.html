@@ -3,74 +3,37 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Block Jumper - Upgraded</title>
-<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet" />
+<title>Block Jumper - Improved</title>
 <style>
   body {
-    font-family: 'Press Start 2P', cursive;
-    background-color: #333;
-    color: #fff;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 100vh;
-    margin: 0;
-    overflow: hidden;
-  }
-  h1 {
-    font-size: 1.5rem;
-    color: #4ade80;
-    text-shadow: 2px 2px #000;
-    margin-bottom: 0.5rem;
-  }
-  #score {
-    font-size: 1.2rem;
-    color: #fde047;
-    text-shadow: 2px 2px #000;
-    margin-bottom: 1rem;
+    margin: 0; background: #5c94fc; display: flex; flex-direction: column; align-items: center; font-family: monospace; color: white;
   }
   canvas {
-    background-color: #5c94fc;
-    border: 4px solid #000;
+    background: #7ec0ee;
+    display: block;
+    margin: 10px auto;
+    border: 3px solid #000;
     border-radius: 8px;
-    box-shadow: 0 0 20px rgba(0,0,0,0.5);
-    max-width: 100%;
-    max-height: 80vh;
-    aspect-ratio: 16 / 9;
   }
-  #controls {
-    margin-top: 0.5rem;
-    font-size: 0.9rem;
-    text-align: center;
+  #score {
+    font-size: 20px;
+    margin: 10px;
   }
   #messageBox {
-    position: absolute;
-    top: 50%;
-    left: 50%;
+    position: fixed;
+    top: 50%; left: 50%;
     transform: translate(-50%, -50%);
-    background-color: rgba(0, 0, 0, 0.8);
-    color: white;
+    background: rgba(0,0,0,0.85);
     padding: 30px;
-    border-radius: 10px;
-    font-size: 2rem;
-    text-align: center;
+    border-radius: 12px;
     display: none;
-    z-index: 10;
+    text-align: center;
   }
   #messageBox button {
-    font-family: 'Press Start 2P', cursive;
-    font-size: 1rem;
-    background-color: #4ade80;
-    color: #000;
-    border: 2px solid #000;
-    padding: 10px 20px;
     margin-top: 20px;
+    padding: 10px 20px;
+    font-weight: bold;
     cursor: pointer;
-    border-radius: 5px;
-  }
-  #messageBox button:hover {
-    background-color: #fff;
   }
 </style>
 </head>
@@ -78,178 +41,160 @@
 
 <h1>Block Jumper</h1>
 <div id="score">Level: 1</div>
-<canvas id="gameCanvas" width="800" height="450"></canvas>
-<div id="controls">
-  Move: [A] [D] or [Left] [Right]<br />
-  Jump: [W], [Up], or [Space]<br />
-  Shoot: [F]
-</div>
+<canvas id="game" width="800" height="450"></canvas>
 
 <div id="messageBox">
-  <p id="messageText"></p>
-  <button id="restartButton">Play Again</button>
+  <div id="messageText"></div>
+  <button id="restartBtn">Restart</button>
 </div>
 
 <script>
-  const canvas = document.getElementById('gameCanvas');
+(() => {
+  const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
+  const scoreDisplay = document.getElementById('score');
+  const messageBox = document.getElementById('messageBox');
+  const messageText = document.getElementById('messageText');
+  const restartBtn = document.getElementById('restartBtn');
 
-  const gravity = 0.5;
-  const friction = 0.8;
-  const shootCooldown = 300;
+  const GRAVITY = 0.7;
+  const FRICTION = 0.8;
+  const SHOOT_COOLDOWN = 300;
 
   let keys = {};
-  let messageBox = document.getElementById('messageBox');
-  let messageText = document.getElementById('messageText');
-  let restartButton = document.getElementById('restartButton');
-  let levelScoreElement = document.getElementById('score');
   let currentLevel = 1;
-  let cameraX = 0;
-  let levelWidth = 0;
 
-  let player = {
+  const player = {
     x: 50,
-    y: 350,
+    y: 0,
     width: 32,
     height: 32,
     vx: 0,
     vy: 0,
-    speed: 6,          // increased speed
-    jumpPower: 14,     // increased jump power
-    isJumping: false,
-    color: '#e11d48',
-    direction: 1,
-    lastShotTime: 0,
-    jumpCount: 0,
+    speed: 6,
+    jumpPower: 15,
+    jumps: 0,
     maxJumps: 2,
-    jumpPressed: false,
+    direction: 1,
+    lastShot: 0
   };
 
   let platforms = [];
   let enemies = [];
-  let goal = {};
   let bullets = [];
+  let goal = null;
+  let cameraX = 0;
+  let levelWidth = 1600;
 
-  function initLevel() {
-    player.x = 50;
-    player.y = 350;
-    player.vx = 0;
-    player.vy = 0;
-    player.isJumping = false;
-    player.jumpCount = 0;
-    messageBox.style.display = 'none';
-    cameraX = 0;
-    levelWidth = 1500 + currentLevel * 300;
-
-    const groundLevel = 418;
+  function createLevel(level) {
+    // Reset everything
     platforms = [];
     enemies = [];
     bullets = [];
+    player.x = 50;
+    player.y = 300;
+    player.vx = 0;
+    player.vy = 0;
+    player.jumps = 0;
 
-    // Generate ground platforms with gaps (not full ground)
-    let lastX = 0;
-    while (lastX < levelWidth) {
-      const platformLength = 120 + Math.random() * 150; // longer platforms
-      platforms.push({
-        x: lastX,
-        y: groundLevel,
-        width: platformLength,
-        height: 32,
-        color: '#22c55e',
-      });
-      lastX += platformLength + (30 + Math.random() * 70); // gaps 30-100px smaller gaps
-    }
+    // Level width grows with level number
+    levelWidth = 1200 + level * 300;
+    cameraX = 0;
 
-    // Add some floating platforms for challenge
-    const floatingPlatformCount = Math.min(5 + currentLevel, 8);
-    for (let i = 0; i < floatingPlatformCount; i++) {
-      const platWidth = 60 + Math.random() * 60;
-      let platX;
-      let platY = 150 + Math.random() * 200;
-
-      if (i >= floatingPlatformCount - 2) {
-        // last 2 floating platforms near goal for safe landing
-        platX = lastX + 50 + i * 70;
-        platY = groundLevel - 100;
-      } else {
-        platX = Math.random() * (levelWidth - platWidth);
+    // Create ground platforms with gaps (~70px)
+    let groundY = 418;
+    let posX = 0;
+    while (posX < levelWidth) {
+      let platWidth = 120 + Math.random() * 150;
+      if (posX + platWidth > levelWidth) {
+        platWidth = levelWidth - posX;
       }
-
       platforms.push({
-        x: platX,
-        y: platY,
+        x: posX,
+        y: groundY,
         width: platWidth,
+        height: 32,
+        color: '#22c55e'
+      });
+      posX += platWidth + 70;  // gaps are 70 px wide
+    }
+
+    // Floating platforms to help jump forward
+    let floatCount = Math.min(5 + level, 8);
+    for (let i = 0; i < floatCount; i++) {
+      let width = 70 + Math.random() * 50;
+      let x = Math.random() * (levelWidth - width - 200) + 150;
+      let y = 180 + Math.random() * 150;
+      platforms.push({
+        x,
+        y,
+        width,
         height: 20,
-        color: '#a16207',
+        color: '#a16207'
       });
     }
 
-    // Enemies, fewer and slower than before to be fair
+    // Place enemies on some platforms (not too many)
     enemies = [];
-    let enemyCount = Math.min(6, Math.floor(currentLevel * 1.2)); // max 6 enemies
+    const enemyCount = Math.min(5, Math.floor(level * 1.3));
     for (let i = 0; i < enemyCount; i++) {
-      if (platforms.length < 2) break;
-      let plat = platforms[Math.floor(Math.random() * (platforms.length - 1)) + 1];
-      let range = Math.random() * 40 + plat.width / 2;
-      if (range < 10) range = 10;
-      let enemyY = plat.y - 32;
-
+      let plat = platforms[Math.floor(Math.random() * platforms.length)];
       enemies.push({
-        x: plat.x + plat.width / 2,
-        y: enemyY,
+        x: plat.x + 20 + Math.random() * (plat.width - 40),
+        y: plat.y - 32,
         width: 32,
         height: 32,
         vx: 1,
-        speed: 1 + currentLevel * 0.2, // slower speed
-        color: '#78350f',
-        startX: plat.x + plat.width / 2,
-        range: range,
+        speed: 1 + level * 0.2,
+        startX: plat.x,
+        endX: plat.x + plat.width,
+        color: '#78350f'
       });
     }
 
-    // Final ground platform near the end, to help finish level
-    platforms.push({
-      x: lastX + 100,
-      y: groundLevel,
-      width: 200,
-      height: 32,
-      color: '#22c55e',
-    });
-
+    // Goal near the end, just after the last platform
     goal = {
-      x: lastX + 175,
-      y: groundLevel - 64,
+      x: levelWidth + 50,
+      y: groundY - 64,
       width: 10,
       height: 64,
-      color: '#fde047',
+      color: '#fde047'
     };
   }
 
-  window.addEventListener('keydown', (e) => (keys[e.code] = true));
-  window.addEventListener('keyup', (e) => (keys[e.code] = false));
-  restartButton.addEventListener('click', () => {
-    currentLevel = 1;
-    levelScoreElement.textContent = `Level: ${currentLevel}`;
-    initLevel();
-    update();
-  });
-
-  function checkCollision(rect1, rect2) {
-    return (
-      rect1.x < rect2.x + rect2.width &&
-      rect1.x + rect1.width > rect2.x &&
-      rect1.y < rect2.y + rect2.height &&
-      rect1.y + rect1.height > rect2.y
-    );
+  function rectsCollide(a, b) {
+    return a.x < b.x + b.width &&
+           a.x + a.width > b.x &&
+           a.y < b.y + b.height &&
+           a.y + a.height > b.y;
   }
 
-  function showMessage(text) {
-    messageText.textContent = text;
+  function showMessage(msg) {
+    messageText.textContent = msg;
     messageBox.style.display = 'block';
   }
 
-  function update() {
-    // Input - Movement
+  function hideMessage() {
+    messageBox.style.display = 'none';
+  }
+
+  restartBtn.addEventListener('click', () => {
+    hideMessage();
+    currentLevel = 1;
+    scoreDisplay.textContent = `Level: ${currentLevel}`;
+    createLevel(currentLevel);
+    requestAnimationFrame(gameLoop);
+  });
+
+  window.addEventListener('keydown', e => {
+    keys[e.code] = true;
+  });
+  window.addEventListener('keyup', e => {
+    keys[e.code] = false;
+  });
+
+  function updatePlayer() {
+    // Horizontal movement
     if (keys['KeyA'] || keys['ArrowLeft']) {
       player.vx = -player.speed;
       player.direction = -1;
@@ -257,184 +202,185 @@
       player.vx = player.speed;
       player.direction = 1;
     } else {
-      player.vx *= friction;
+      player.vx *= FRICTION;
       if (Math.abs(player.vx) < 0.1) player.vx = 0;
     }
 
-    // Input - Jump (Double Jump logic)
-    if (keys['KeyW'] || keys['ArrowUp'] || keys['Space']) {
-      if (!player.jumpPressed && player.jumpCount < player.maxJumps) {
-        player.vy = -player.jumpPower;
-        player.jumpCount++;
-        player.jumpPressed = true;
-      }
-    } else {
+    // Jump - allow double jump
+    if ((keys['KeyW'] || keys['ArrowUp'] || keys['Space']) && player.jumps < player.maxJumps && !player.jumpPressed) {
+      player.vy = -player.jumpPower;
+      player.jumps++;
+      player.jumpPressed = true;
+    }
+    if (!(keys['KeyW'] || keys['ArrowUp'] || keys['Space'])) {
       player.jumpPressed = false;
     }
 
-    // Input - Shoot
+    // Shoot bullets
     if (keys['KeyF']) {
       let now = Date.now();
-      if (now - player.lastShotTime > shootCooldown) {
-        player.lastShotTime = now;
+      if (now - player.lastShot > SHOOT_COOLDOWN) {
+        player.lastShot = now;
         bullets.push({
-          x: player.x + (player.direction > 0 ? player.width : -8),
-          y: player.y + player.height / 2 - 2,
-          width: 8,
-          height: 4,
+          x: player.x + (player.direction === 1 ? player.width : -10),
+          y: player.y + player.height / 2 - 4,
+          width: 10,
+          height: 8,
           vx: 10 * player.direction,
-          color: '#fde047',
+          color: '#fde047'
         });
       }
     }
 
-    player.vy += gravity;
+    // Gravity and movement
+    player.vy += GRAVITY;
     player.x += player.vx;
     player.y += player.vy;
 
-    // Camera follows player
-    let targetCameraX = player.x - canvas.width / 3;
-    if (targetCameraX < 0) targetCameraX = 0;
-    if (targetCameraX > levelWidth - canvas.width) targetCameraX = levelWidth - canvas.width;
-    cameraX += (targetCameraX - cameraX) * 0.1;
+    // Prevent going off left side
+    if (player.x < 0) {
+      player.x = 0;
+      player.vx = 0;
+    }
+    // Prevent going past level width
+    if (player.x + player.width > levelWidth + 100) {
+      player.x = levelWidth + 100 - player.width;
+      player.vx = 0;
+    }
 
+    // Platform collisions (only from top)
     let onGround = false;
-
-    // Collision with platforms
-    for (let platform of platforms) {
-      if (checkCollision(player, platform)) {
-        let overlapX = (player.width / 2 + platform.width / 2) - Math.abs(player.x + player.width / 2 - (platform.x + platform.width / 2));
-        let overlapY = (player.height / 2 + platform.height / 2) - Math.abs(player.y + player.height / 2 - (platform.y + platform.height / 2));
-
-        if (overlapY < overlapX) {
-          if (player.vy > 0) {
-            player.y = platform.y - player.height;
-            player.vy = 0;
-            player.isJumping = false;
-            onGround = true;
-            player.jumpCount = 0; // reset jump count on landing
-          } else if (player.vy < 0) {
-            player.y = platform.y + platform.height;
-            player.vy = 0.1;
-          }
-        } else {
-          if (player.vx > 0) {
-            player.x = platform.x - player.width;
-          } else if (player.vx < 0) {
-            player.x = platform.x + platform.width;
-          }
-          player.vx = 0;
-        }
+    for (const plat of platforms) {
+      if (player.vy >= 0 &&
+          player.x + player.width > plat.x &&
+          player.x < plat.x + plat.width &&
+          player.y + player.height >= plat.y &&
+          player.y + player.height <= plat.y + plat.height) {
+        player.y = plat.y - player.height;
+        player.vy = 0;
+        onGround = true;
+        player.jumps = 0;
       }
     }
 
-    // Bullets movement and collision with enemies
+    if (!onGround) {
+      player.jumps = Math.min(player.jumps, player.maxJumps); // allow double jump logic
+    }
+
+    // Check if player fell off screen
+    if (player.y > canvas.height) {
+      showMessage('You fell! Game Over.');
+      currentLevel = 1;
+    }
+
+    // Check if player reached goal
+    if (rectsCollide(player, goal)) {
+      currentLevel++;
+      scoreDisplay.textContent = `Level: ${currentLevel}`;
+      createLevel(currentLevel);
+      return;
+    }
+  }
+
+  function updateEnemies() {
+    for (const enemy of enemies) {
+      enemy.x += enemy.vx * enemy.speed;
+      if (enemy.x < enemy.startX) enemy.vx = 1;
+      else if (enemy.x + enemy.width > enemy.endX) enemy.vx = -1;
+
+      // Collision with player
+      if (rectsCollide(player, enemy)) {
+        if (player.vy > 0 && player.y + player.height - 10 < enemy.y) {
+          // stomp enemy
+          const index = enemies.indexOf(enemy);
+          if (index > -1) enemies.splice(index, 1);
+          player.vy = -player.jumpPower / 1.5;
+        } else {
+          // player dies
+          showMessage('You died! Game Over.');
+          currentLevel = 1;
+        }
+      }
+    }
+  }
+
+  function updateBullets() {
     for (let i = bullets.length - 1; i >= 0; i--) {
-      let bullet = bullets[i];
-      bullet.x += bullet.vx;
-      if (bullet.x < cameraX - 50 || bullet.x > cameraX + canvas.width + 50) {
+      const b = bullets[i];
+      b.x += b.vx;
+
+      if (b.x < 0 || b.x > levelWidth + 200) {
         bullets.splice(i, 1);
         continue;
       }
 
       for (let j = enemies.length - 1; j >= 0; j--) {
-        let enemy = enemies[j];
-        if (checkCollision(bullet, enemy)) {
-          bullets.splice(i, 1);
+        if (rectsCollide(b, enemies[j])) {
           enemies.splice(j, 1);
+          bullets.splice(i, 1);
           break;
         }
       }
     }
+  }
 
-    // Enemies movement and collision with player
-    for (let i = enemies.length - 1; i >= 0; i--) {
-      let enemy = enemies[i];
-      enemy.x += enemy.vx * enemy.speed;
-
-      if (enemy.x < enemy.startX - enemy.range || enemy.x > enemy.startX + enemy.range) {
-        enemy.vx *= -1;
-      }
-
-      if (checkCollision(player, enemy)) {
-        if (player.vy > 0 && player.y + player.height < enemy.y + enemy.height / 2) {
-          enemies.splice(i, 1);
-          player.vy = -player.jumpPower / 2;
-        } else {
-          currentLevel = 1;
-          levelScoreElement.textContent = `Level: ${currentLevel}`;
-          showMessage("Game Over!");
-          return;
-        }
-      }
-    }
-
-    if (player.y > canvas.height) {
-      currentLevel = 1;
-      levelScoreElement.textContent = `Level: ${currentLevel}`;
-      showMessage("You Fell!");
-      return;
-    }
-
-    if (player.x < 0) {
-      player.x = 0;
-      player.vx = 0;
-    }
-
-    if (player.x + player.width > levelWidth) {
-      player.x = levelWidth - player.width;
-      player.vx = 0;
-    }
-
-    // Check if player reached the goal
-    if (checkCollision(player, goal)) {
-      currentLevel++;
-      levelScoreElement.textContent = `Level: ${currentLevel}`;
-      initLevel();
-      return;
-    }
-
-    // Drawing
+  function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Platforms
-    for (let platform of platforms) {
-      ctx.fillStyle = platform.color;
-      ctx.fillRect(platform.x - cameraX, platform.y, platform.width, platform.height);
+    // Camera follows player (offset by 1/3 screen to the left)
+    cameraX += ((player.x - cameraX) - canvas.width / 3) * 0.1;
+    if (cameraX < 0) cameraX = 0;
+    if (cameraX > levelWidth - canvas.width) cameraX = levelWidth - canvas.width;
+
+    // Draw platforms
+    for (const plat of platforms) {
+      ctx.fillStyle = plat.color;
+      ctx.fillRect(plat.x - cameraX, plat.y, plat.width, plat.height);
     }
 
-    // Bullets
-    for (let bullet of bullets) {
-      ctx.fillStyle = bullet.color;
-      ctx.fillRect(bullet.x - cameraX, bullet.y, bullet.width, bullet.height);
-    }
-
-    // Enemies
-    for (let enemy of enemies) {
-      ctx.fillStyle = enemy.color;
-      ctx.fillRect(enemy.x - cameraX, enemy.y, enemy.width, enemy.height);
-    }
-
-    // Goal (flag)
+    // Draw goal flag
     ctx.fillStyle = goal.color;
     ctx.fillRect(goal.x - cameraX, goal.y, goal.width, goal.height);
     ctx.fillStyle = '#4ade80';
     ctx.beginPath();
     ctx.moveTo(goal.x - cameraX, goal.y);
-    ctx.lineTo(goal.x - 30 - cameraX, goal.y + 15);
-    ctx.lineTo(goal.x - cameraX, goal.y + 30);
+    ctx.lineTo(goal.x - 25 - cameraX, goal.y + 20);
+    ctx.lineTo(goal.x - cameraX, goal.y + 40);
     ctx.closePath();
     ctx.fill();
 
-    // Player
-    ctx.fillStyle = player.color;
-    ctx.fillRect(player.x - cameraX, player.y, player.width, player.height);
+    // Draw enemies
+    for (const enemy of enemies) {
+      ctx.fillStyle = enemy.color;
+      ctx.fillRect(enemy.x - cameraX, enemy.y, enemy.width, enemy.height);
+    }
 
-    requestAnimationFrame(update);
+    // Draw bullets
+    for (const b of bullets) {
+      ctx.fillStyle = b.color;
+      ctx.fillRect(b.x - cameraX, b.y, b.width, b.height);
+    }
+
+    // Draw player
+    ctx.fillStyle = '#e11d48';
+    ctx.fillRect(player.x - cameraX, player.y, player.width, player.height);
   }
 
-  initLevel();
-  update();
+  function gameLoop() {
+    if (messageBox.style.display === 'block') return; // pause when message shown
+
+    updatePlayer();
+    updateEnemies();
+    updateBullets();
+    draw();
+
+    requestAnimationFrame(gameLoop);
+  }
+
+  createLevel(currentLevel);
+  requestAnimationFrame(gameLoop);
+
+})();
 </script>
 
 </body>
