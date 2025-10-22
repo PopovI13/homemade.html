@@ -338,8 +338,7 @@
       if (e.x < e.startX) e.vx = 1;
       else if (e.x + e.width > e.endX) e.vx = -1;
       if (rectsCollide(player, e)) {
-       if (player.vy > 0 && player.y + player.height‑10 < e.y) {
-
+       if (player.vy > 0 && player.y + player.height - 10 < e.y) {
           // stomp
           const idx = enemies.indexOf(e);
           if(idx>=0) enemies.splice(idx,1);
