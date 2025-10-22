@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Block Jumper - Harder Level</title>
+<title>Block Jumper - Upgraded</title>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet" />
 <style>
   body {
@@ -87,11 +87,10 @@
 
 <div id="messageBox">
   <p id="messageText"></p>
-  <button id="restartButton">Continue</button>
+  <button id="restartButton">Play Again</button>
 </div>
 
 <script>
-(() => {
   const canvas = document.getElementById('gameCanvas');
   const ctx = canvas.getContext('2d');
 
@@ -100,11 +99,10 @@
   const shootCooldown = 300;
 
   let keys = {};
-  const messageBox = document.getElementById('messageBox');
-  const messageText = document.getElementById('messageText');
-  const restartButton = document.getElementById('restartButton');
-  const levelScoreElement = document.getElementById('score');
-
+  let messageBox = document.getElementById('messageBox');
+  let messageText = document.getElementById('messageText');
+  let restartButton = document.getElementById('restartButton');
+  let levelScoreElement = document.getElementById('score');
   let currentLevel = 1;
   let cameraX = 0;
   let levelWidth = 0;
@@ -116,8 +114,8 @@
     height: 32,
     vx: 0,
     vy: 0,
-    speed: 5,
-    jumpPower: 12,
+    speed: 6,          // increased speed
+    jumpPower: 14,     // increased jump power
     isJumping: false,
     color: '#e11d48',
     direction: 1,
@@ -141,19 +139,17 @@
     player.jumpCount = 0;
     messageBox.style.display = 'none';
     cameraX = 0;
-
-    // Increase level width with level number
-    levelWidth = 1500 + currentLevel * 500;
+    levelWidth = 1500 + currentLevel * 300;
 
     const groundLevel = 418;
     platforms = [];
     enemies = [];
     bullets = [];
 
-    // Create ground platforms with gaps to make it harder (broken ground)
+    // Generate ground platforms with gaps (not full ground)
     let lastX = 0;
     while (lastX < levelWidth) {
-      const platformLength = 100 + Math.random() * 200; // shorter platforms
+      const platformLength = 120 + Math.random() * 150; // longer platforms
       platforms.push({
         x: lastX,
         y: groundLevel,
@@ -161,15 +157,24 @@
         height: 32,
         color: '#22c55e',
       });
-      lastX += platformLength + (50 + Math.random() * 100); // gap size between 50-150 px
+      lastX += platformLength + (30 + Math.random() * 70); // gaps 30-100px smaller gaps
     }
 
-    // Create floating platforms above ground (harder to reach)
-    let floatingPlatformCount = 5 + currentLevel * 2;
+    // Add some floating platforms for challenge
+    const floatingPlatformCount = Math.min(5 + currentLevel, 8);
     for (let i = 0; i < floatingPlatformCount; i++) {
-      const platWidth = 50 + Math.random() * 80;
-      const platX = Math.random() * (levelWidth - platWidth);
-      const platY = 150 + Math.random() * 200;
+      const platWidth = 60 + Math.random() * 60;
+      let platX;
+      let platY = 150 + Math.random() * 200;
+
+      if (i >= floatingPlatformCount - 2) {
+        // last 2 floating platforms near goal for safe landing
+        platX = lastX + 50 + i * 70;
+        platY = groundLevel - 100;
+      } else {
+        platX = Math.random() * (levelWidth - platWidth);
+      }
+
       platforms.push({
         x: platX,
         y: platY,
@@ -179,8 +184,9 @@
       });
     }
 
-    // Increase enemy count and speed with level
-    let enemyCount = Math.min(10, Math.floor(currentLevel * 1.5));
+    // Enemies, fewer and slower than before to be fair
+    enemies = [];
+    let enemyCount = Math.min(6, Math.floor(currentLevel * 1.2)); // max 6 enemies
     for (let i = 0; i < enemyCount; i++) {
       if (platforms.length < 2) break;
       let plat = platforms[Math.floor(Math.random() * (platforms.length - 1)) + 1];
@@ -194,19 +200,24 @@
         width: 32,
         height: 32,
         vx: 1,
-        speed: 1.5 + currentLevel * 0.3,
+        speed: 1 + currentLevel * 0.2, // slower speed
         color: '#78350f',
         startX: plat.x + plat.width / 2,
         range: range,
       });
     }
 
-    // Final platform for the goal with a small gap before it
-    let finalPlatX = lastX + 150;
-    platforms.push({ x: finalPlatX, y: groundLevel, width: 200, height: 32, color: '#22c55e' });
+    // Final ground platform near the end, to help finish level
+    platforms.push({
+      x: lastX + 100,
+      y: groundLevel,
+      width: 200,
+      height: 32,
+      color: '#22c55e',
+    });
 
     goal = {
-      x: finalPlatX + 75,
+      x: lastX + 175,
       y: groundLevel - 64,
       width: 10,
       height: 64,
@@ -217,11 +228,9 @@
   window.addEventListener('keydown', (e) => (keys[e.code] = true));
   window.addEventListener('keyup', (e) => (keys[e.code] = false));
   restartButton.addEventListener('click', () => {
-    if (messageText.textContent.includes('Game Over') || messageText.textContent.includes('You Fell')) {
-      currentLevel = 1;
-    }
-    initLevel();
+    currentLevel = 1;
     levelScoreElement.textContent = `Level: ${currentLevel}`;
+    initLevel();
     update();
   });
 
@@ -252,7 +261,7 @@
       if (Math.abs(player.vx) < 0.1) player.vx = 0;
     }
 
-    // Input - Jump (Double Jump)
+    // Input - Jump (Double Jump logic)
     if (keys['KeyW'] || keys['ArrowUp'] || keys['Space']) {
       if (!player.jumpPressed && player.jumpCount < player.maxJumps) {
         player.vy = -player.jumpPower;
@@ -283,9 +292,10 @@
     player.x += player.vx;
     player.y += player.vy;
 
-    // Camera movement
+    // Camera follows player
     let targetCameraX = player.x - canvas.width / 3;
-    targetCameraX = Math.max(0, Math.min(targetCameraX, levelWidth - canvas.width));
+    if (targetCameraX < 0) targetCameraX = 0;
+    if (targetCameraX > levelWidth - canvas.width) targetCameraX = levelWidth - canvas.width;
     cameraX += (targetCameraX - cameraX) * 0.1;
 
     let onGround = false;
@@ -293,8 +303,8 @@
     // Collision with platforms
     for (let platform of platforms) {
       if (checkCollision(player, platform)) {
-        let overlapX = player.width / 2 + platform.width / 2 - Math.abs(player.x + player.width / 2 - (platform.x + platform.width / 2));
-        let overlapY = player.height / 2 + platform.height / 2 - Math.abs(player.y + player.height / 2 - (platform.y + platform.height / 2));
+        let overlapX = (player.width / 2 + platform.width / 2) - Math.abs(player.x + player.width / 2 - (platform.x + platform.width / 2));
+        let overlapY = (player.height / 2 + platform.height / 2) - Math.abs(player.y + player.height / 2 - (platform.y + platform.height / 2));
 
         if (overlapY < overlapX) {
           if (player.vy > 0) {
@@ -302,7 +312,7 @@
             player.vy = 0;
             player.isJumping = false;
             onGround = true;
-            player.jumpCount = 0; // Reset jump count
+            player.jumpCount = 0; // reset jump count on landing
           } else if (player.vy < 0) {
             player.y = platform.y + platform.height;
             player.vy = 0.1;
@@ -318,7 +328,7 @@
       }
     }
 
-    // Update bullets
+    // Bullets movement and collision with enemies
     for (let i = bullets.length - 1; i >= 0; i--) {
       let bullet = bullets[i];
       bullet.x += bullet.vx;
@@ -337,7 +347,7 @@
       }
     }
 
-    // Update enemies
+    // Enemies movement and collision with player
     for (let i = enemies.length - 1; i >= 0; i--) {
       let enemy = enemies[i];
       enemy.x += enemy.vx * enemy.speed;
@@ -347,55 +357,65 @@
       }
 
       if (checkCollision(player, enemy)) {
-        // Stomp enemy
         if (player.vy > 0 && player.y + player.height < enemy.y + enemy.height / 2) {
           enemies.splice(i, 1);
           player.vy = -player.jumpPower / 2;
         } else {
+          currentLevel = 1;
+          levelScoreElement.textContent = `Level: ${currentLevel}`;
           showMessage("Game Over!");
           return;
         }
       }
     }
 
-    // Player fall death
     if (player.y > canvas.height) {
+      currentLevel = 1;
+      levelScoreElement.textContent = `Level: ${currentLevel}`;
       showMessage("You Fell!");
       return;
     }
 
-    // Keep player inside level bounds
-    player.x = Math.max(0, Math.min(player.x, levelWidth - player.width));
+    if (player.x < 0) {
+      player.x = 0;
+      player.vx = 0;
+    }
 
-    // Check if reached goal (flag)
+    if (player.x + player.width > levelWidth) {
+      player.x = levelWidth - player.width;
+      player.vx = 0;
+    }
+
+    // Check if player reached the goal
     if (checkCollision(player, goal)) {
       currentLevel++;
       levelScoreElement.textContent = `Level: ${currentLevel}`;
       initLevel();
+      return;
     }
 
-    // Drawing everything
+    // Drawing
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Draw platforms
+    // Platforms
     for (let platform of platforms) {
       ctx.fillStyle = platform.color;
       ctx.fillRect(platform.x - cameraX, platform.y, platform.width, platform.height);
     }
 
-    // Draw bullets
+    // Bullets
     for (let bullet of bullets) {
       ctx.fillStyle = bullet.color;
       ctx.fillRect(bullet.x - cameraX, bullet.y, bullet.width, bullet.height);
     }
 
-    // Draw enemies
+    // Enemies
     for (let enemy of enemies) {
       ctx.fillStyle = enemy.color;
       ctx.fillRect(enemy.x - cameraX, enemy.y, enemy.width, enemy.height);
     }
 
-    // Draw goal (flagpole)
+    // Goal (flag)
     ctx.fillStyle = goal.color;
     ctx.fillRect(goal.x - cameraX, goal.y, goal.width, goal.height);
     ctx.fillStyle = '#4ade80';
@@ -406,24 +426,15 @@
     ctx.closePath();
     ctx.fill();
 
-    // Draw player (simple Mario style block with eyes)
+    // Player
     ctx.fillStyle = player.color;
     ctx.fillRect(player.x - cameraX, player.y, player.width, player.height);
-
-    // Eyes
-    ctx.fillStyle = '#000';
-    ctx.fillRect(player.x - cameraX + 10, player.y + 10, 4, 4);
-    ctx.fillRect(player.x - cameraX + 18, player.y + 10, 4, 4);
 
     requestAnimationFrame(update);
   }
 
-  canvas.width = 800;
-  canvas.height = 450;
-  levelScoreElement.textContent = `Level: ${currentLevel}`;
   initLevel();
   update();
-})();
 </script>
 
 </body>
