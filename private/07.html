@@ -1,1 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Block Jumper</title>
+    <!-- Using a pixel-style font for a retro feel -->
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Press Start 2P', cursive;
+            background-color: #333;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+        h1 {
+            font-size: 1.5rem;
+            color: #4ade80; /* Bright green */
+            text-shadow: 2px 2px #000;
+            margin-bottom: 0.5rem; /* Added margin */
+        }
+        #score {
+            font-size: 1.2rem;
+            color: #fde047; /* Yellow */
+            text-shadow: 2px 2px #000;
+            margin-bottom: 1rem;
+        }
+        canvas {
+            background-color: #5c94fc; /* Sky blue */
+            border: 4px solid #000;
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            max-width: 100%;
+            max-height: 80vh;
+            aspect-ratio: 16 / 9;
+        }
+        #controls {
+            margin-top: 0.5rem; /* Adjusted margin */
+            font-size: 0.9rem;
+            text-align: center;
+        }
+        #messageBox {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 30px;
+            border-radius: 10px;
+            font-size: 2rem;
+            text-align: center;
+            display: none; /* Hidden by default */
+            z-index: 10;
+        }
+        #messageBox button {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 1rem;
+            background-color: #4ade80;
+            color: #000;
+            border: 2px solid #000;
+            padding: 10px 20px;
+            margin-top: 20px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        #messageBox button:hover {
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Block Jumper</h1>
+    <div id="score">Level: 1</div> <!-- Added Level Counter -->
+    <canvas id="gameCanvas" width="800" height="450"></canvas>
+    <div id="controls">
+        Move: [A] [D] or [Left] [Right]
+        <br>
+        Jump: [W], [Up], or [Space]
+        <br>
+        Shoot: [F] <!-- Added Shoot control -->
+    </div>
+
+    <!-- Message Box for Win/Lose -->
+    <div id="messageBox">
+        <p id="messageText"></p>
+        <button id="restartButton">Play Again</button>
+    </div>
+
+    <script>
+        // --- Setup Canvas and Context ---
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Game Variables ---
+        const gravity = 0.5;
+        const friction = 0.8;
+        const shootCooldown = 300; // milliseconds
+        let keys = {};
+        let messageBox = document.getElementById('messageBox');
+        let messageText = document.getElementById('messageText');
+        let restartButton = document.getElementById('restartButton');
+        let levelScoreElement = document.getElementById('score'); // Get score element
+        let currentLevel = 1; // Track current level
+        let cameraX = 0; // Camera for scrolling
+        let levelWidth = 0; // How long the level is
+
+        // --- Game Objects ---
+        let player = {
+            x: 50,
+            y: 350,
+            width: 32,
+            height: 32,
+            vx: 0,
+            vy: 0,
+            speed: 5,
+            jumpPower: 12,
+            isJumping: false,
+            color: '#e11d48', // Red
+            direction: 1, // 1 for right, -1 for left
+            lastShotTime: 0
+        };
+
+        let platforms = [];
+        let enemies = [];
+        let goal = {};
+        let bullets = []; // Array to hold bullets
+
+        // --- Level Data ---
+        // A simple function to initialize our level
+        function initLevel() {
+            // Reset player
+            player.x = 50;
+            player.y = 350;
+            player.vx = 0;
+            player.vy = 0;
+            player.isJumping = false;
+            messageBox.style.display = 'none';
+            cameraX = 0;
+            levelWidth = 1500 + currentLevel * 300; // Make levels longer
+            const groundLevel = 418;
+
+            // --- Procedural Level Generation ---
+            platforms = [];
+            enemies = [];
+            bullets = []; // Clear bullets on new level
+
+            // 1. Starting platform
+            platforms.push({ x: 0, y: groundLevel, width: 200, height: 32, color: '#22c55e' });
+
+            let lastX = 200;
+
+            // 2. Generate random platforms (walking and jumping)
+            while (lastX < levelWidth - 300) { // Leave room for the end
+                let platformType = Math.random();
+
+                if (platformType < 0.4) { // 40% chance: Long walking section
+                    let newWidth = Math.random() * 300 + 200; // 200-500px long
+                    let gap = Math.random() * 50 + 10; // 10-60px gap
+                    platforms.push({ x: lastX + gap, y: groundLevel, width: newWidth, height: 32, color: '#22c55e' });
+                    lastX += gap + newWidth;
+                } else { // 60% chance: Jumping section
+                    let newX = lastX + (Math.random() * 100 + 80); // 80-180px gap
+                    let newY = Math.random() * 150 + 200; // Random height (200-350)
+                    let newWidth = Math.random() * 50 + 70; // 70-120px wide
+                    platforms.push({ x: newX, y: newY, width: newWidth, height: 20, color: '#a16207' });
+                    lastX = newX + newWidth;
+                }
+            }
+
+            // 3. Add enemies based on level
+            let enemyCount = Math.floor(currentLevel / 2) + 1; // Start with 1 enemy
+            for (let i = 0; i < enemyCount; i++) {
+                if (platforms.length < 2) break;
+                // Pick a random platform (but not the first one)
+                let plat = platforms[Math.floor(Math.random() * (platforms.length - 1)) + 1];
+                let range = Math.random() * 20 + (plat.width / 2 - 20);
+                if (range < 10) range = 10;
+                
+                let enemyY = (plat.y === groundLevel) ? groundLevel - 32 : plat.y - 32;
+
+                enemies.push({
+                    x: plat.x + plat.width / 2,
+                    y: enemyY,
+                    width: 32,
+                    height: 32,
+                    vx: 1,
+                    speed: 1 + (currentLevel * 0.1), // Enemies get faster
+                    color: '#78350f',
+                    startX: plat.x + plat.width / 2,
+                    range: range
+                });
+            }
+
+            // 4. Define goal on a final platform
+            let finalPlatX = lastX + 100;
+            platforms.push({ x: finalPlatX, y: groundLevel, width: 200, height: 32, color: '#22c55e' });
+            
+            goal = {
+                x: finalPlatX + 75, // Centered on platform
+                y: groundLevel - 64, // 64px above platform
+                width: 10,
+                height: 64,
+                color: '#fde047' // Yellow
+            };
+        }
+
+        // --- Event Listeners ---
+        window.addEventListener('keydown', (e) => {
+            keys[e.code] = true;
+        });
+        window.addEventListener('keyup', (e) => {
+            keys[e.code] = false;
+        });
+        restartButton.addEventListener('click', () => {
+            initLevel();
+            levelScoreElement.textContent = `Level: ${currentLevel}`;
+            update(); // Manually restart the game loop
+        });
+
+        // --- Helper Function: Collision Detection (AABB) ---
+        function checkCollision(rect1, rect2) {
+            return (
+                rect1.x < rect2.x + rect2.width &&
+                rect1.x + rect1.width > rect2.x &&
+                rect1.y < rect2.y + rect2.height &&
+                rect1.y + rect1.height > rect2.y
+            );
+        }
+
+        // --- Show Message ---
+        function showMessage(text) {
+            messageText.textContent = text;
+            messageBox.style.display = 'block';
+        }
+
+        // --- Game Loop ---
+        function update() {
+            // --- 1. Handle Input ---
+            // Left/Right Movement
+            if (keys['KeyA'] || keys['ArrowLeft']) {
+                player.vx = -player.speed;
+                player.direction = -1; // Set direction
+            } else if (keys['KeyD'] || keys['ArrowRight']) {
+                player.vx = player.speed;
+                player.direction = 1; // Set direction
+            } else {
+                player.vx *= friction; // Apply friction
+            }
+
+            // Jump
+            if ((keys['KeyW'] || keys['ArrowUp'] || keys['Space']) && !player.isJumping) {
+                player.vy = -player.jumpPower;
+                player.isJumping = true;
+            }
+
+            // Shoot
+            if (keys['KeyF']) {
+                let now = Date.now();
+                if (now - player.lastShotTime > shootCooldown) {
+                    player.lastShotTime = now;
+                    bullets.push({
+                        x: player.x + (player.direction > 0 ? player.width : 0), // Start from edge of player
+                        y: player.y + player.height / 2 - 2, // Center of player
+                        width: 8,
+                        height: 4,
+                        vx: 10 * player.direction,
+                        color: '#fde047' // Yellow bullet
+                    });
+                }
+            }
+
+            // --- 2. Apply Physics ---
+            player.vy += gravity; // Apply gravity
+            player.x += player.vx;
+            player.y += player.vy;
+
+            // --- 3. Camera Scrolling ---
+            // Smoothly follow the player
+            let targetCameraX = player.x - canvas.width / 3;
+            if (targetCameraX < 0) {
+                targetCameraX = 0; // Don't scroll past the start
+            }
+            if (targetCameraX > levelWidth - canvas.width) {
+                targetCameraX = levelWidth - canvas.width; // Don't scroll past the end
+            }
+            cameraX += (targetCameraX - cameraX) * 0.1; // Smooth camera movement
+
+            // --- 4. Collision Detection & Response ---
+            let onGround = false;
+
+            // Platform collisions
+            for (let platform of platforms) {
+                if (checkCollision(player, platform)) {
+                    // Calculate overlap
+                    let overlapX = (player.width / 2 + platform.width / 2) - Math.abs((player.x + player.width / 2) - (platform.x + platform.width / 2));
+                    let overlapY = (player.height / 2 + platform.height / 2) - Math.abs((player.y + player.height / 2) - (platform.y + platform.height / 2));
+
+                    if (overlapY < overlapX) {
+                        // Top/Bottom collision
+                        if (player.vy > 0) { // Moving down
+                            player.y = platform.y - player.height;
+                            player.vy = 0;
+                            player.isJumping = false;
+                            onGround = true;
+                        } else if (player.vy < 0) { // Moving up (hit head)
+                            player.y = platform.y + platform.height;
+                            player.vy = 0.1; // Bounce off slightly
+                        }
+                    } else {
+                        // Side collision
+                        if (player.vx > 0) { // Moving right
+                            player.x = platform.x - player.width;
+                        } else if (player.vx < 0) { // Moving left
+                            player.x = platform.x + platform.width;
+                        }
+                        player.vx = 0;
+                    }
+                }
+            }
+
+            // --- 5. Update Bullets ---
+            for (let i = bullets.length - 1; i >= 0; i--) {
+                let bullet = bullets[i];
+                bullet.x += bullet.vx;
+
+                // Remove bullets that are off-screen (relative to camera)
+                if (bullet.x < cameraX - 50 || bullet.x > cameraX + canvas.width + 50) {
+                    bullets.splice(i, 1);
+                    continue;
+                }
+
+                // Check for bullet-enemy collision
+                for (let j = enemies.length - 1; j >= 0; j--) {
+                    let enemy = enemies[j];
+                    if (checkCollision(bullet, enemy)) {
+                        bullets.splice(i, 1); // Remove bullet
+                        enemies.splice(j, 1); // Remove enemy
+                        break; // Stop checking enemies for this bullet
+                    }
+                }
+            }
+
+            // --- 6. Update Enemies ---
+            for (let i = enemies.length - 1; i >= 0; i--) {
+                let enemy = enemies[i];
+                enemy.x += enemy.vx * enemy.speed;
+
+                // Simple patrol AI
+                if (enemy.x < enemy.startX - enemy.range || enemy.x > enemy.startX + enemy.range) {
+                    enemy.vx *= -1; // Turn around
+                }
+
+                // Enemy collision with player
+                if (checkCollision(player, enemy)) {
+                    // Check if player stomped on enemy
+                    if (player.vy > 0 && (player.y + player.height) < (enemy.y + enemy.height / 2)) {
+                        enemies.splice(i, 1); // Remove enemy
+                        player.vy = -player.jumpPower / 2; // Small bounce
+                    } else {
+                        // Player got hit
+                        currentLevel = 1; // Reset level counter
+                        levelScoreElement.textContent = `Level: ${currentLevel}`;
+                        showMessage("Game Over!");
+                        return; // Stop the loop
+                    }
+                }
+            }
+            
+            // --- 7. Check Boundaries & Goal ---
+            // Fall off screen
+            if (player.y > canvas.height) {
+                currentLevel = 1; // Reset level counter
+                levelScoreElement.textContent = `Level: ${currentLevel}`;
+                showMessage("You Fell!");
+                return; // Stop the loop
+            }
+
+            // Don't go off left edge
+            if (player.x < 0) {
+                player.x = 0;
+                player.vx = 0;
+            }
+            // Don't go off right edge of the *level*
+            if (player.x + player.width > levelWidth) {
+                player.x = levelWidth - player.width;
+                player.vx = 0;
+            }
+
+            // Check for goal
+            if (checkCollision(player, goal)) {
+                // Instead of winning, go to next level
+                currentLevel++;
+                levelScoreElement.textContent = `Level: ${currentLevel}`;
+                initLevel(); // Regenerate level
+            }
+
+            // --- 8. Draw Everything ---
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+<!-- ... existing code ...
+            for (let platform of platforms) {
+                ctx.fillStyle = platform.color;
+                ctx.fillRect(platform.x - cameraX, platform.y, platform.width, platform.height);
+            }
+
+            // Draw bullets (relative to camera)
+            for (let bullet of bullets) {
+                ctx.fillStyle = bullet.color;
+                ctx.fillRect(bullet.x - cameraX, bullet.y, bullet.width, bullet.height);
+            }
+
+            // Draw enemies (relative to camera)
+            for (let enemy of enemies) {
+                ctx.fillStyle = enemy.color;
+                ctx.fillRect(enemy.x - cameraX, enemy.y, enemy.width, enemy.height);
+            }
+
+            // Draw goal (relative to camera)
+            ctx.fillStyle = goal.color;
+            ctx.fillRect(goal.x - cameraX, goal.y, goal.width, goal.height);
+            // Draw flag (relative to camera)
+            ctx.fillStyle = '#4ade80';
+            ctx.beginPath();
+            ctx.moveTo(goal.x - cameraX, goal.y);
+            ctx.lineTo(goal.x - 30 - cameraX, goal.y + 15);
+            ctx.lineTo(goal.x - cameraX, goal.y + 30);
+            ctx.closePath();
+            ctx.fill();
+
+
+            // Draw player (relative to camera)
+            ctx.fillStyle = player.color;
+            ctx.fillRect(player.x - cameraX, player.y, player.width, player.height);
+
+            // --- 9. Request Next Frame ---
+            requestAnimationFrame(update);
+        }
+        
+        // --- Start Game ---
+        // Resize canvas to fit container
+        function resizeCanvas() {
+            const container = canvas.parentElement;
+            const aspect = 16 / 9;
+            const newWidth = container.clientWidth * 0.9;
+            const newHeight = newWidth / aspect;
+
+            if (newHeight > window.innerHeight * 0.8) {
+                canvas.height = window.innerHeight * 0.8;
+                canvas.width = canvas.height * aspect;
+            } else {
+                canvas.width = newWidth;
+                canvas.height = newHeight;
+            }
+            
+            // Re-initialize level to scale elements if needed (or apply scaling)
+            // For simplicity, we'll just restart
+            initLevel();
+        }
+
+        // Note: A full scaling implementation is complex.
+        // For this demo, we'll just set a fixed size and let the CSS handle max-width.
+        // A more robust solution would scale all game coordinates.
+        
+        // Let's stick to fixed internal resolution for simplicity.
+        canvas.width = 800;
+        canvas.height = 450;
+        
+        levelScoreElement.textContent = `Level: ${currentLevel}`; // Set initial level text
+        initLevel();
+        update(); // Start the game loop
+
+    </script>
+</body>
+</html>
+
+
+
 
