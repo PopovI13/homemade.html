@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF‑8"/>
-  <meta name="viewport" content="width=device‑width, initial‑scale=1"/>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>Block Jumper – Full Upgrade</title>
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet"/>
   <style>
     body {
-      font-family: 'Press Start 2P', cursive;
+      font-family: 'Press Start 2P', cursive;
       background: #333;
       color: #fff;
       margin:0;
@@ -17,10 +17,42 @@
       justify-content:center;
       overflow:hidden;
     }
-    h1 { font-size:1.5rem; color:#4ade80; text-shadow:2px2px#000; margin:0.5rem 0; }
+    #gameHeader {
+      width: 100%;
+      max-width: 800px; /* Match canvas width */
+      box-sizing: border-box; /* Include padding/border in width */
+      display: flex;
+      flex-wrap: wrap; /* Allow wrapping on small screens */
+      justify-content: space-between;
+      align-items: center;
+      background: #222;
+      padding: 10px 20px;
+      border: 4px solid #000;
+      border-radius: 8px;
+      margin-bottom: 0.5rem;
+    }
+    h1 { 
+      font-size:1.25rem; /* Slightly smaller to fit */
+      color:#4ade80; 
+      text-shadow:2px 2px #000; 
+      margin: 5px 0; /* Add a little margin for wrap */
+    }
     #hud {
-      font-size:1rem;
-      margin-bottom:0.5rem;
+      font-size: 0.9rem;
+      margin: 5px 0; /* Add a little margin for wrap */
+      display: flex;
+      gap: 1.5rem; /* Space out items */
+    }
+    .hud-item {
+      color: #fff;
+      display: inline-flex; /* Align text and value */
+      align-items: center;
+    }
+    .hud-value {
+      color: #fde047; /* Yellow for values */
+      font-weight: bold;
+      margin-left: 0.5rem; /* Space between label and value */
+      min-width: 20px; /* Give it some space */
     }
     canvas {
       background:#5c94fc;
@@ -29,23 +61,23 @@
       box-shadow:0 0 20px rgba(0,0,0,0.5);
       max-width:100%;
       max-height:80vh;
-      aspect‑ratio:16/9;
+      aspect-ratio:16/9;
     }
     #messageBox {
       position:absolute;
       top:50%;
       left:50%;
-      transform:translate(‑50%,‑50%);
+      transform:translate(-50%,-50%);
       background:rgba(0,0,0,0.9);
       padding:30px 40px;
       border-radius:10px;
       text-align:center;
       font-size:2rem;
       display:none;
-      z‑index:10;
+      z-index:10;
     }
     #messageBox button {
-      font-family:'Press Start 2P',cursive;
+      font-family:'Press Start 2P',cursive;
       font-size:1rem;
       background:#4ade80;
       color:#000;
@@ -62,13 +94,19 @@
 </head>
 <body>
 
-<h1>Block Jumper – Full Upgrade</h1>
-<div id="hud">Level: <span id="levelDisplay">1</span> &nbsp; Lives: <span id="livesDisplay">3</span> &nbsp; Coins: <span id="coinsDisplay">0</span></div>
+<header id="gameHeader">
+  <h1>Block Jumper – Full Upgrade</h1>
+  <div id="hud">
+    <span class="hud-item">Level: <span id="levelDisplay" class="hud-value">1</span></span>
+    <span class="hud-item">Lives: <span id="livesDisplay" class="hud-value">3</span></span>
+    <span class="hud-item">Coins: <span id="coinsDisplay" class="hud-value">0</span></span>
+  </div>
+</header>
 <canvas id="gameCanvas" width="800" height="450"></canvas>
 
 <div id="messageBox">
   <p id="messageText"></p>
-  <button id="restartButton">Restart</button>
+  <button id="restartButton">Restart / Continue</button>
 </div>
 
 <script>
@@ -126,6 +164,7 @@
     player.jumps = 0;
     player.poweredUp = false;
     player.powerUpTimer = 0;
+    player.maxJumps = 2; // Reset max jumps
 
     cameraX = 0;
     levelWidth = 1200 + currentLevel * 400;
@@ -142,7 +181,8 @@
     while (posX < levelWidth) {
       const w = 120 + Math.random()*150;
       platforms.push({ x: posX, y: groundY, width:w, height:32, color:'#22c55e' });
-      posX += w + (30 + Math.random()*70);
+      // Make gaps slightly larger as level increases
+      posX += w + (30 + currentLevel*2 + Math.random()*70);
     }
 
     // floating platforms
@@ -154,30 +194,53 @@
     }
 
     // place coins
-    for (let i=0; i<10 + currentLevel*2; i++) {
-      const cx = Math.random()*(levelWidth-50) + 50;
-      const cy = Math.random()*200 + 50;
+    const numCoins = 5 + currentLevel; // Reduced number of coins
+    const coinSpacing = (levelWidth - 200) / (numCoins + 1); // Space them out, avoiding edges
+
+    for (let i = 1; i <= numCoins; i++) {
+      // Place near interval, with some horizontal jitter
+      const cx = 100 + (coinSpacing * i) + (Math.random() - 0.5) * 50; 
+      // Place in a tighter vertical band in the air
+      const cy = 150 + Math.random() * 100; 
       coinsOnLevel.push({ x:cx, y:cy, width:16, height:16, collected:false });
     }
 
     // power ups (one per level maybe)
-    if (Math.random()<0.8) {
+    // Decrease chance of power-up as level increases
+    if (Math.random() < Math.max(0.1, 0.8 - currentLevel * 0.05)) {
       const puX = Math.random()*(levelWidth-100) + 50;
       const puY = Math.random()*200 + 50;
       powerUps.push({ x:puX, y:puY, width:20, height:20, type:'doubleJump', used:false });
     }
 
     // enemies
-    for (let i=0;i<Math.min(5, currentLevel+2);i++) {
+    // Increase max number of enemies and their speed scaling
+    for (let i=0;i<Math.min(8, currentLevel+2);i++) {
       let plat = platforms[Math.floor(Math.random()*platforms.length)];
+      // Ensure platform is not null or undefined
+      if (!plat) {
+          // Fallback: place on ground if no platform found (rare)
+          plat = { x: Math.random() * (levelWidth - 100), y: groundY, width: 100 };
+      }
+        
+      let startX = plat.x + 10;
+      let endX = plat.x + plat.width - 32;
+
+      // Ensure start is less than end
+      if (startX > endX) {
+          startX = plat.x;
+          endX = plat.x + plat.width - 32;
+          if (endX < startX) endX = startX + 10; // Failsafe
+      }
+
       enemies.push({
-        x: plat.x + 10,
+        x: startX,
         y: plat.y - 32,
         width:32, height:32,
         vx:1,
-        speed:1 + currentLevel*0.2,
-        startX:plat.x,
-        endX:plat.x + plat.width - 32,
+        speed:1 + currentLevel*0.3, // Increased speed scaling
+        startX: startX,
+        endX: endX,
         color:'#78350f'
       });
     }
@@ -197,6 +260,12 @@
 
   function showMessage(text) {
     messageText.textContent = text;
+    // Dynamically change button text based on the message
+    if (text === "Game Over!") {
+      restartButton.textContent = "Restart";
+    } else {
+      restartButton.textContent = "Continue";
+    }
     messageBox.style.display='block';
   }
 
@@ -236,7 +305,7 @@
       if (Math.abs(player.vx)<0.1) player.vx=0;
     }
 
-    // jump or power‑up double
+    // jump or power-up double
     if ((keys['KeyW']||keys['ArrowUp']||keys['Space'])) {
       if (!player.jumpPressed && player.jumps < player.maxJumps) {
         player.vy = -player.jumpPower;
@@ -273,20 +342,27 @@
     // platform collisions
     let onGround=false;
     for (let p of platforms) {
-      if (player.vy >= 0 &&
+      if (player.vy >= 0 && // Only check if falling or stationary
           player.x + player.width > p.x &&
           player.x < p.x + p.width &&
           player.y + player.height >= p.y &&
-          player.y + player.height <= p.y + p.height) {
+          player.y + player.height <= p.y + p.height + player.vy) { // Check within next frame
         player.y = p.y - player.height;
         player.vy = 0;
         onGround=true;
         player.jumps = 0;
       }
     }
-    if (!onGround && player.jumps > player.maxJumps) {
-      player.jumps = player.maxJumps;
+    
+    // This logic seems flawed, let's re-think
+    // if (!onGround && player.jumps > player.maxJumps) {
+    //   player.jumps = player.maxJumps;
+    // }
+    // A better check: if we are in the air and haven't jumped yet, set jumps to 1 (airborne)
+    if (!onGround && player.jumps === 0) {
+        player.jumps = 1;
     }
+
 
     // coin pickup
     for (let c of coinsOnLevel) {
@@ -297,12 +373,12 @@
       }
     }
 
-    // power‑up pickup
+    // power-up pickup
     for (let pu of powerUps) {
       if (!pu.used && rectsCollide(player, pu)) {
         pu.used = true;
         if (pu.type === 'doubleJump') {
-          player.maxJumps = 3;
+          player.maxJumps = 3; // Give 3 jumps (ground + 2 air)
           player.poweredUp = true;
           player.powerUpTimer = Date.now();
         }
@@ -327,46 +403,57 @@
         if (rectsCollide(b, enemies[j])) {
           enemies.splice(j,1);
           bullets.splice(i,1);
-          break;
+          break; // Stop checking enemies for this bullet
         }
       }
     }
 
     // enemy movement & collision
-    for (let e of enemies) {
+    for (let i = enemies.length - 1; i >= 0; i--) {
+      let e = enemies[i];
       e.x += e.vx * e.speed;
-      if (e.x < e.startX) e.vx = 1;
-      else if (e.x + e.width > e.endX) e.vx = -1;
+      
+      // Check boundaries
+      if (e.vx > 0 && e.x + e.width > e.endX) {
+        e.vx = -1;
+        e.x = e.endX - e.width; // Snap to boundary
+      } else if (e.vx < 0 && e.x < e.startX) {
+        e.vx = 1;
+        e.x = e.startX; // Snap to boundary
+      }
+
       if (rectsCollide(player, e)) {
-       if (player.vy > 0 && player.y + player.height - 10 < e.y) {
-          // stomp
-          const idx = enemies.indexOf(e);
-          if(idx>=0) enemies.splice(idx,1);
-          player.vy = -player.jumpPower/1.5;
+       // Check for stomp: player is falling (vy > 0) and player's feet are just above enemy's head
+       if (player.vy > 0 && (player.y + player.height) < (e.y + e.height / 2)) {
+          // Stomp
+          enemies.splice(i,1);
+          player.vy = -player.jumpPower/1.5; // Bounce
+          player.jumps = 1; // Allow air jump after stomp
         } else {
+          // Player hit enemy from side or bottom
           lives--;
           hudLives.textContent = lives;
           if (lives <= 0) {
             showMessage("Game Over!");
-            return;
+            return; // Stop update loop
           } else {
             showMessage("You lost a life – Continue?");
-            return;
+            return; // Stop update loop
           }
         }
       }
     }
 
     // fall off
-    if (player.y > canvas.height) {
+    if (player.y > canvas.height + 100) { // Give some buffer
       lives--;
       hudLives.textContent = lives;
       if (lives <= 0) {
         showMessage("Game Over!");
-        return;
+        return; // Stop update loop
       } else {
         showMessage("You lost a life – Continue?");
-        return;
+        return; // Stop update loop
       }
     }
 
@@ -374,7 +461,7 @@
     if (rectsCollide(player, goal)) {
       currentLevel++;
       showMessage("Level Complete!");
-      return;
+      return; // Stop update loop
     }
   }
 
@@ -382,71 +469,136 @@
     ctx.clearRect(0,0,canvas.width,canvas.height);
 
     // camera follow
-    cameraX += ((player.x - cameraX) - canvas.width/3) * 0.1;
+    // Smooth camera follow
+    let targetCameraX = player.x - canvas.width / 3;
+    cameraX += (targetCameraX - cameraX) * 0.1;
+
     if (cameraX < 0) cameraX = 0;
     if (cameraX > levelWidth - canvas.width) cameraX = levelWidth - canvas.width;
+    // Handle level width smaller than canvas width
+    if (levelWidth < canvas.width) {
+        cameraX = (levelWidth - canvas.width) / 2;
+    }
+
 
     // draw platforms
     for (let p of platforms) {
       ctx.fillStyle = p.color;
-      ctx.fillRect(p.x - cameraX, p.y, p.width, p.height);
+      ctx.fillRect(Math.floor(p.x - cameraX), Math.floor(p.y), p.width, p.height);
     }
 
     // draw coins
     for (let c of coinsOnLevel) {
       if (!c.collected) {
         ctx.fillStyle = '#ffeb3b';
-        ctx.fillRect(c.x - cameraX, c.y, c.width, c.height);
+        ctx.fillRect(Math.floor(c.x - cameraX), Math.floor(c.y), c.width, c.height);
       }
     }
 
     // draw power ups
     for (let pu of powerUps) {
       if (!pu.used) {
-        ctx.fillStyle = '#00e5ff';
-        ctx.fillRect(pu.x - cameraX, pu.y, pu.width, pu.height);
+        // Pulsing effect for power-up
+        const pulse = Math.abs(Math.sin(Date.now() / 300)) * 0.5 + 0.5; // 0.5 to 1.0
+        ctx.globalAlpha = pulse;
+        ctx.fillStyle = '#00e5ff'; // Bright cyan
+        ctx.fillRect(Math.floor(pu.x - cameraX), Math.floor(pu.y), pu.width, pu.height);
+        ctx.globalAlpha = 1.0; // Reset alpha
       }
     }
 
     // draw goal
     ctx.fillStyle = goal.color;
-    ctx.fillRect(goal.x - cameraX, goal.y, goal.width, goal.height);
-    ctx.fillStyle = '#4ade80';
+    ctx.fillRect(Math.floor(goal.x - cameraX), Math.floor(goal.y), goal.width, goal.height);
+    // Draw flag
+    ctx.fillStyle = '#4ade80'; // Green flag
     ctx.beginPath();
-    ctx.moveTo(goal.x - cameraX, goal.y);
-    ctx.lineTo(goal.x - 25 - cameraX, goal.y+20);
-    ctx.lineTo(goal.x - cameraX, goal.y+40);
+    ctx.moveTo(Math.floor(goal.x - cameraX), Math.floor(goal.y));
+    ctx.lineTo(Math.floor(goal.x - 25 - cameraX), Math.floor(goal.y+15));
+    ctx.lineTo(Math.floor(goal.x - cameraX), Math.floor(goal.y+30));
     ctx.closePath();
     ctx.fill();
 
     // draw enemies
     for (let e of enemies) {
       ctx.fillStyle = e.color;
-      ctx.fillRect(e.x - cameraX, e.y, e.width, e.height);
+      ctx.fillRect(Math.floor(e.x - cameraX), Math.floor(e.y), e.width, e.height);
     }
 
     // draw bullets
     for (let b of bullets) {
       ctx.fillStyle = b.color;
-      ctx.fillRect(b.x - cameraX, b.y, b.width, b.height);
+      ctx.fillRect(Math.floor(b.x - cameraX), Math.floor(b.y), b.width, b.height);
     }
 
     // draw player
-    ctx.fillStyle = '#e11d48';
-    ctx.fillRect(player.x - cameraX, player.y, player.width, player.height);
+    // Change player color if powered up
+    ctx.fillStyle = player.poweredUp ? '#f87171' : '#e11d48'; // Lighter red when powered
+    ctx.fillRect(Math.floor(player.x - cameraX), Math.floor(player.y), player.width, player.height);
+    
+    // Draw player "eyes" to show direction
+    ctx.fillStyle = '#ffffff';
+    if (player.direction > 0) {
+        ctx.fillRect(Math.floor(player.x - cameraX + 20), Math.floor(player.y + 8), 6, 6);
+        ctx.fillRect(Math.floor(player.x - cameraX + 8), Math.floor(player.y + 8), 6, 6);
+    } else {
+        ctx.fillRect(Math.floor(player.x - cameraX + 6), Math.floor(player.y + 8), 6, 6);
+        ctx.fillRect(Math.floor(player.x - cameraX + 18), Math.floor(player.y + 8), 6, 6);
+    }
   }
 
+  let animationFrameId = null;
   function loop() {
-    if (messageBox.style.display==='block') return;
+    if (messageBox.style.display==='block') {
+       // Stop the loop if message is shown
+       if (animationFrameId) {
+           cancelAnimationFrame(animationFrameId);
+           animationFrameId = null;
+       }
+       return;
+    }
     updatePlayer();
     draw();
-    requestAnimationFrame(loop);
+    animationFrameId = requestAnimationFrame(loop);
   }
 
-  initLevel();
-  loop();
+  // Resize canvas logic
+  function resizeCanvas() {
+        const aspectRatio = 16 / 9;
+        const container = canvas.parentElement;
+        const containerWidth = container.clientWidth;
+        const containerHeight = window.innerHeight * 0.8; // Use 80% of viewport height
+
+        let newWidth = containerWidth;
+        let newHeight = newWidth / aspectRatio;
+
+        if (newHeight > containerHeight) {
+            newHeight = containerHeight;
+            newWidth = newHeight * aspectRatio;
+        }
+
+        // Don't set canvas.width/height directly as it clears the canvas
+        // and changes coordinate system. Use style instead.
+        canvas.style.width = `${newWidth}px`;
+        canvas.style.height = `${newHeight}px`;
+  }
+
+  // Initial resize and add listener
+  window.addEventListener('resize', resizeCanvas);
+  
+  // Need to wrap init and loop in a load event to ensure fonts are ready
+  // and layout is stable for resizeCanvas
+  window.addEventListener('load', () => {
+      resizeCanvas();
+      initLevel();
+      loop();
+  });
 
 </script>
 
 </body>
 </html>
+
+
+
+
