@@ -8,7 +8,7 @@
   <style>
     body {
       font-family: 'Press Start 2P', cursive;
-      background: #333;
+      background: #1a1a1a; /* Darker, sophisticated background */
       color: #fff;
       margin:0;
       display:flex;
@@ -16,79 +16,123 @@
       align-items:center;
       justify-content:center;
       overflow:hidden;
+      min-height: 100vh;
     }
     #gameHeader {
       width: 100%;
-      max-width: 800px; /* Match canvas width */
-      box-sizing: border-box; /* Include padding/border in width */
+      max-width: 800px;
+      box-sizing: border-box;
       display: flex;
-      flex-wrap: wrap; /* Allow wrapping on small screens */
+      flex-wrap: wrap;
       justify-content: space-between;
       align-items: center;
-      background: #222;
+      background: #2b2b2b; /* Dark grey panel */
       padding: 10px 20px;
-      border: 4px solid #000;
+      border: 4px solid #4ade80; /* Bright border for arcade feel */
       border-radius: 8px;
       margin-bottom: 0.5rem;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.5);
     }
     h1 { 
-      font-size:1.25rem; /* Slightly smaller to fit */
+      font-size:1.1rem;
       color:#4ade80; 
-      text-shadow:2px 2px #000; 
-      margin: 5px 0; /* Add a little margin for wrap */
+      text-shadow: 0 0 5px #000, 0 0 10px #000; 
+      margin: 5px 0;
     }
     #hud {
-      font-size: 0.9rem;
-      margin: 5px 0; /* Add a little margin for wrap */
+      font-size: 0.8rem;
+      margin: 5px 0;
       display: flex;
-      gap: 1.5rem; /* Space out items */
+      gap: 1.5rem;
     }
     .hud-item {
       color: #fff;
-      display: inline-flex; /* Align text and value */
+      display: inline-flex;
       align-items: center;
+      text-shadow: 1px 1px #000;
     }
     .hud-value {
-      color: #fde047; /* Yellow for values */
+      color: #fde047; 
       font-weight: bold;
-      margin-left: 0.5rem; /* Space between label and value */
-      min-width: 20px; /* Give it some space */
+      margin-left: 0.5rem;
+      min-width: 20px;
+      text-shadow: 0 0 5px #fde047; /* Yellow glow effect */
     }
     canvas {
-      background:#5c94fc;
+      /* Background drawing is now handled by the JS gradient */
       border:4px solid #000;
       border-radius:8px;
-      box-shadow:0 0 20px rgba(0,0,0,0.5);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.7); /* Stronger shadow */
       max-width:100%;
       max-height:80vh;
       aspect-ratio:16/9;
+      display: block; 
     }
     #messageBox {
       position:absolute;
       top:50%;
       left:50%;
       transform:translate(-50%,-50%);
-      background:rgba(0,0,0,0.9);
-      padding:30px 40px;
-      border-radius:10px;
+      background:rgba(0,0,0,0.95);
+      padding:40px 60px;
+      border-radius:12px;
       text-align:center;
-      font-size:2rem;
+      font-size:1.4rem;
       display:none;
       z-index:10;
+      border: 3px solid #fde047; /* Yellow border for emphasis */
+      box-shadow: 0 0 30px rgba(253, 224, 71, 0.5); /* Glowing effect */
+    }
+    #messageBox p {
+      color: #fff;
+      text-shadow: 2px 2px #000;
     }
     #messageBox button {
       font-family:'Press Start 2P',cursive;
       font-size:1rem;
       background:#4ade80;
       color:#000;
-      border:2px solid #000;
-      padding:10px 20px;
-      margin-top:20px;
+      border:3px solid #000;
+      padding:12px 24px;
+      margin-top:30px;
       cursor:pointer;
       border-radius:5px;
+      transition: background-color 0.2s, transform 0.1s;
+      box-shadow: 0 4px 0 #16a34a; /* 3D effect */
     }
     #messageBox button:hover {
       background:#fff;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 0 #16a34a;
+    }
+    #messageBox button:active {
+      transform: translateY(2px);
+      box-shadow: 0 2px 0 #16a34a;
+    }
+    /* Responsive adjustments */
+    @media (max-width: 600px) {
+      h1 {
+        font-size: 0.8rem;
+        width: 100%;
+        text-align: center;
+      }
+      #hud {
+        font-size: 0.7rem;
+        gap: 0.8rem;
+        width: 100%;
+        justify-content: center;
+      }
+      #gameHeader {
+        padding: 10px;
+      }
+      #messageBox {
+        font-size: 1rem;
+        padding: 20px;
+        width: 85%;
+      }
+      #messageBox button {
+        font-size: 0.8rem;
+      }
     }
   </style>
 </head>
@@ -130,6 +174,7 @@
   let coins = 0;
   let cameraX = 0;
   let levelWidth = 0;
+  let gameRunning = true; // Use a boolean state
 
   let player = {
     x: 50,
@@ -145,7 +190,8 @@
     direction:1,
     lastShot:0,
     poweredUp: false,
-    powerUpTimer:0
+    powerUpTimer:0,
+    jumpPressed: false
   };
 
   let platforms = [];
@@ -155,19 +201,94 @@
   let powerUps = [];
   let goal = {};
 
-  function initLevel() {
-    // reset some
+  // --- Drawing Helpers ---
+
+  // Simple background gradient for the sky
+  const skyGradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+  skyGradient.addColorStop(0, '#5c94fc'); 
+  skyGradient.addColorStop(1, '#a6c6ff'); 
+
+  // Function to draw a platform with a clean, dark border
+  function drawPlatform(p) {
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 2;
+    
+    // Base color and top color for a slight 3D look
+    let baseColor = p.color || '#a16207'; // Default brown
+    let topColor = '#c48b3b'; // Lighter brown for top
+
+    // Ground platforms are green
+    if (p.y >= canvas.height - 50) {
+        baseColor = '#22c55e'; // Dark green
+        topColor = '#4ade80'; // Bright green for top
+    }
+
+    // Draw the body
+    ctx.fillStyle = baseColor;
+    ctx.fillRect(Math.floor(p.x - cameraX), Math.floor(p.y), p.width, p.height);
+    
+    // Draw the top highlight
+    ctx.fillStyle = topColor;
+    ctx.fillRect(Math.floor(p.x - cameraX), Math.floor(p.y), p.width, 4);
+
+    // Draw the outline
+    ctx.strokeRect(Math.floor(p.x - cameraX), Math.floor(p.y), p.width, p.height);
+    ctx.lineWidth = 1; // Reset line width
+  }
+  
+  // Function to draw an enemy with rounded top
+  function drawEnemy(e) {
+    const x = Math.floor(e.x - cameraX);
+    const y = Math.floor(e.y);
+    const w = e.width;
+    const h = e.height;
+    const radius = w / 4;
+
+    // 1. Draw body (rounded top, flat bottom)
+    ctx.beginPath();
+    // Top-left corner (start arc)
+    ctx.arc(x + radius, y + radius, radius, Math.PI, Math.PI * 1.5);
+    // Top-right corner (arc to)
+    ctx.lineTo(x + w - radius, y);
+    ctx.arc(x + w - radius, y + radius, radius, Math.PI * 1.5, Math.PI * 2);
+    // Right side, bottom, left side (straight lines)
+    ctx.lineTo(x + w, y + h);
+    ctx.lineTo(x, y + h);
+    ctx.lineTo(x, y + radius);
+    ctx.closePath();
+    
+    ctx.fillStyle = e.color; // Base brown color
+    ctx.fill();
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    
+    // 2. Draw feet (simple squares)
+    ctx.fillStyle = '#1c1c1c';
+    ctx.fillRect(x + 3, y + h - 4, 8, 4);
+    ctx.fillRect(x + w - 11, y + h - 4, 8, 4);
+
+    // 3. Draw eyes (white circles)
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(x + 7, y + 8, 5, 5);
+    ctx.fillRect(x + w - 12, y + 8, 5, 5);
+    
+    // 4. Pupils (black)
+    ctx.fillStyle = '#000';
+    ctx.fillRect(x + 9, y + 10, 2, 2);
+    ctx.fillRect(x + w - 10, y + 10, 2, 2);
+  }
+
+  // --- Game Initialization ---
+  function generateLevel() {
+    // Reset player state (visuals only, physics reset in initLevel)
     player.x = 50;
     player.y = 300;
     player.vx = 0;
     player.vy = 0;
-    player.jumps = 0;
-    player.poweredUp = false;
-    player.powerUpTimer = 0;
-    player.maxJumps = 2; // Reset max jumps
 
-    cameraX = 0;
-    levelWidth = 1200 + currentLevel * 400;
+    // Level width scaling: Increase slope (from 400 to 500)
+    levelWidth = 1200 + currentLevel * 500; 
 
     platforms = [];
     enemies = [];
@@ -175,82 +296,89 @@
     coinsOnLevel = [];
     powerUps = [];
 
-    // generate ground platforms with smaller gaps
+    // --- Ground Generation ---
     const groundY = canvas.height - 32;
     let posX = 0;
     while (posX < levelWidth) {
       const w = 120 + Math.random()*150;
       platforms.push({ x: posX, y: groundY, width:w, height:32, color:'#22c55e' });
-      // Make gaps slightly larger as level increases
-      posX += w + (30 + currentLevel*2 + Math.random()*70);
+      // Gaps slightly larger
+      posX += w + (50 + currentLevel*3 + Math.random()*80); 
     }
 
-    // floating platforms
-    for (let i=0;i<5 + currentLevel;i++) {
+    // --- Floating Platforms ---
+    const numFloatPlats = 5 + currentLevel * 2; // More platforms
+    for (let i=0;i<numFloatPlats;i++) {
       const w = 60 + Math.random()*60;
       const x = Math.random()*(levelWidth - w);
       const y = 150 + Math.random()*200;
-      platforms.push({ x,y,width:w, height:20, color:'#a16207' });
+      // Ensure it's not too low (no overlap with ground)
+      if (y < groundY - 100) { 
+        platforms.push({ x,y,width:w, height:20, color:'#a16207' });
+      }
     }
 
-    // place coins
-    const numCoins = 5 + currentLevel; // Reduced number of coins
-    const coinSpacing = (levelWidth - 200) / (numCoins + 1); // Space them out, avoiding edges
+    // --- Coins ---
+    const numCoins = 10 + currentLevel; // More coins
+    const coinSpacing = (levelWidth - 200) / (numCoins + 1);
 
     for (let i = 1; i <= numCoins; i++) {
-      // Place near interval, with some horizontal jitter
       const cx = 100 + (coinSpacing * i) + (Math.random() - 0.5) * 50; 
-      // Place in a tighter vertical band in the air
       const cy = 150 + Math.random() * 100; 
       coinsOnLevel.push({ x:cx, y:cy, width:16, height:16, collected:false });
     }
 
-    // power ups (one per level maybe)
-    // Decrease chance of power-up as level increases
+    // --- Power Ups ---
     if (Math.random() < Math.max(0.1, 0.8 - currentLevel * 0.05)) {
       const puX = Math.random()*(levelWidth-100) + 50;
       const puY = Math.random()*200 + 50;
-      powerUps.push({ x:puX, y:puY, width:20, height:20, type:'doubleJump', used:false });
+      powerUps.push({ x:puX, y:puY, width:20, height:20, type:'shoot', used:false }); // Added Shoot Powerup
     }
-
-    // enemies
-    // Increase max number of enemies and their speed scaling
-    for (let i=0;i<Math.min(8, currentLevel+2);i++) {
+    
+    // --- Enemies ---
+    for (let i=0;i<Math.min(10 + currentLevel, 25);i++) {
       let plat = platforms[Math.floor(Math.random()*platforms.length)];
-      // Ensure platform is not null or undefined
-      if (!plat) {
-          // Fallback: place on ground if no platform found (rare)
-          plat = { x: Math.random() * (levelWidth - 100), y: groundY, width: 100 };
-      }
-        
+      if (!plat) continue;
+      
       let startX = plat.x + 10;
       let endX = plat.x + plat.width - 32;
 
-      // Ensure start is less than end
-      if (startX > endX) {
-          startX = plat.x;
-          endX = plat.x + plat.width - 32;
-          if (endX < startX) endX = startX + 10; // Failsafe
+      if (startX < endX) { 
+        enemies.push({
+          x: startX,
+          y: plat.y - 32,
+          width:32, height:32,
+          vx:1,
+          speed:1.5 + currentLevel*0.4, // Increased speed scaling
+          startX: startX,
+          endX: endX,
+          color:'#78350f'
+        });
       }
-
-      enemies.push({
-        x: startX,
-        y: plat.y - 32,
-        width:32, height:32,
-        vx:1,
-        speed:1 + currentLevel*0.3, // Increased speed scaling
-        startX: startX,
-        endX: endX,
-        color:'#78350f'
-      });
     }
 
-    // goal
+    // --- Goal ---
     goal = { x: levelWidth - 80, y: groundY - 64, width:10, height:64, color:'#fde047' };
 
+    // Update HUD
     hudLevel.textContent = currentLevel;
     hudLives.textContent = lives;
     hudCoins.textContent = coins;
+  }
+
+  function initLevel() {
+    // Reset player physics
+    player.x = 50;
+    player.y = 300;
+    player.vx = 0;
+    player.vy = 0;
+    player.jumps = 0;
+    player.poweredUp = false;
+    player.powerUpTimer = 0;
+    player.maxJumps = 2; 
+
+    // Regenerate level content
+    generateLevel();
   }
 
   function rectsCollide(a,b) {
@@ -260,40 +388,43 @@
 
   function showMessage(text) {
     messageText.textContent = text;
-    // Dynamically change button text based on the message
-    if (text === "Game Over!") {
+    if (text.includes("Game Over")) {
       restartButton.textContent = "Restart";
     } else {
       restartButton.textContent = "Continue";
     }
     messageBox.style.display='block';
+    gameRunning = false;
   }
 
   function hideMessage() {
     messageBox.style.display='none';
+    gameRunning = true;
+    loop(); // Restart the loop if it was stopped
   }
 
   restartButton.addEventListener('click', () => {
-    hideMessage();
     if (lives <= 0) {
       lives = 3;
       coins = 0;
       currentLevel = 1;
     }
     initLevel();
-    loop();
+    hideMessage();
   });
 
+  // --- Input Handling ---
   window.addEventListener('keydown', e=> {
     keys[e.code] = true;
-    if (["Space","ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].includes(e.code)) {
+    if (["Space","ArrowUp","ArrowDown","ArrowLeft","ArrowRight","KeyA","KeyD","KeyW","KeyF"].includes(e.code)) {
       e.preventDefault();
     }
   });
   window.addEventListener('keyup', e=> keys[e.code]=false);
 
+  // --- Game Logic ---
   function updatePlayer() {
-    // horizontal
+    // horizontal movement
     if (keys['KeyA']||keys['ArrowLeft']) {
       player.vx = -player.speed;
       player.direction = -1;
@@ -305,7 +436,7 @@
       if (Math.abs(player.vx)<0.1) player.vx=0;
     }
 
-    // jump or power-up double
+    // jump
     if ((keys['KeyW']||keys['ArrowUp']||keys['Space'])) {
       if (!player.jumpPressed && player.jumps < player.maxJumps) {
         player.vy = -player.jumpPower;
@@ -316,16 +447,17 @@
       player.jumpPressed = false;
     }
 
-    // shoot bullets
+    // shoot bullets (F key)
     if (keys['KeyF']) {
       const now = Date.now();
-      if (now - player.lastShot > shootCooldown) {
+      // Added a requirement for being poweredUp to shoot
+      if (player.poweredUp && now - player.lastShot > shootCooldown) { 
         player.lastShot = now;
         bullets.push({
           x: player.x + (player.direction>0?player.width:-10),
-          y: player.y + player.height/2 -4,
-          width:10, height:8,
-          vx:12*player.direction, color:'#ffdc00'
+          y: player.y + player.height/2 - 4,
+          width:15, height:8,
+          vx:15*player.direction, color:'#ffdc00'
         });
       }
     }
@@ -346,42 +478,42 @@
           player.x + player.width > p.x &&
           player.x < p.x + p.width &&
           player.y + player.height >= p.y &&
-          player.y + player.height <= p.y + p.height + player.vy) { // Check within next frame
+          player.y + player.height <= p.y + player.vy) { 
         player.y = p.y - player.height;
         player.vy = 0;
         onGround=true;
         player.jumps = 0;
+        break; 
       }
     }
     
-    // This logic seems flawed, let's re-think
-    // if (!onGround && player.jumps > player.maxJumps) {
-    //   player.jumps = player.maxJumps;
-    // }
-    // A better check: if we are in the air and haven't jumped yet, set jumps to 1 (airborne)
+    // Set jumps to 1 if airborne and not currently jumping
     if (!onGround && player.jumps === 0) {
-        player.jumps = 1;
+      player.jumps = 1; 
     }
 
-
     // coin pickup
-    for (let c of coinsOnLevel) {
+    for (let i=coinsOnLevel.length-1; i>=0; i--) {
+      let c = coinsOnLevel[i];
       if (!c.collected && rectsCollide(player,c)) {
         c.collected = true;
         coins++;
         hudCoins.textContent = coins;
+        coinsOnLevel.splice(i, 1);
       }
     }
 
     // power-up pickup
-    for (let pu of powerUps) {
+    for (let i=powerUps.length-1; i>=0; i--) {
+      let pu = powerUps[i];
       if (!pu.used && rectsCollide(player, pu)) {
         pu.used = true;
-        if (pu.type === 'doubleJump') {
-          player.maxJumps = 3; // Give 3 jumps (ground + 2 air)
+        if (pu.type === 'shoot') {
           player.poweredUp = true;
           player.powerUpTimer = Date.now();
+          player.maxJumps = 3; // Keep the existing double jump powerup effect too
         }
+        powerUps.splice(i, 1);
       }
     }
 
@@ -390,120 +522,151 @@
       player.maxJumps = 2;
       player.poweredUp = false;
     }
+  }
 
+  function updateEnemiesAndBullets() {
     // bullet & enemy update
     for (let i=bullets.length-1; i>=0; i--) {
       const b=bullets[i];
       b.x += b.vx;
+      
+      // Check bullet lifetime
       if (b.x < cameraX-50 || b.x > cameraX + canvas.width +50) {
         bullets.splice(i,1);
         continue;
       }
+      
+      // Check bullet collision with enemies
+      let hitEnemy = false;
       for (let j=enemies.length-1; j>=0; j--) {
         if (rectsCollide(b, enemies[j])) {
           enemies.splice(j,1);
           bullets.splice(i,1);
-          break; // Stop checking enemies for this bullet
+          hitEnemy = true;
+          break; 
         }
+      }
+      if (hitEnemy) continue;
+      
+      // Check bullet collision with platforms (optional: bullets break on walls)
+      for (let p of platforms) {
+          if (rectsCollide(b, p)) {
+            bullets.splice(i,1);
+            break;
+          }
       }
     }
 
     // enemy movement & collision
     for (let i = enemies.length - 1; i >= 0; i--) {
       let e = enemies[i];
-      e.x += e.vx * e.speed;
+      e.x += e.vx * e.speed * (1/60); // Use delta-time factor for speed consistency
       
       // Check boundaries
       if (e.vx > 0 && e.x + e.width > e.endX) {
         e.vx = -1;
-        e.x = e.endX - e.width; // Snap to boundary
       } else if (e.vx < 0 && e.x < e.startX) {
         e.vx = 1;
-        e.x = e.startX; // Snap to boundary
       }
 
       if (rectsCollide(player, e)) {
-       // Check for stomp: player is falling (vy > 0) and player's feet are just above enemy's head
-       if (player.vy > 0 && (player.y + player.height) < (e.y + e.height / 2)) {
+        // Stomp check
+        if (player.vy > 0 && (player.y + player.height) < (e.y + e.height / 2)) {
           // Stomp
           enemies.splice(i,1);
-          player.vy = -player.jumpPower/1.5; // Bounce
-          player.jumps = 1; // Allow air jump after stomp
+          player.vy = -player.jumpPower/1.5; 
+          player.jumps = 1; 
         } else {
-          // Player hit enemy from side or bottom
+          // Player hit enemy from side or bottom (Death)
           lives--;
           hudLives.textContent = lives;
           if (lives <= 0) {
             showMessage("Game Over!");
-            return; // Stop update loop
+            return; 
           } else {
             showMessage("You lost a life – Continue?");
-            return; // Stop update loop
+            return; 
           }
         }
       }
     }
-
-    // fall off
-    if (player.y > canvas.height + 100) { // Give some buffer
+    
+    // --- Death by falling ---
+    if (player.y > canvas.height + 100) {
       lives--;
       hudLives.textContent = lives;
       if (lives <= 0) {
         showMessage("Game Over!");
-        return; // Stop update loop
+        return; 
       } else {
         showMessage("You lost a life – Continue?");
-        return; // Stop update loop
+        return; 
       }
     }
 
-    // reach goal
+    // --- Reach Goal ---
     if (rectsCollide(player, goal)) {
       currentLevel++;
-      showMessage("Level Complete!");
-      return; // Stop update loop
+      showMessage(`Level ${currentLevel-1} Complete!`);
+      return; 
     }
   }
 
   function draw() {
-    ctx.clearRect(0,0,canvas.width,canvas.height);
+    // 1. Draw Sky Gradient Background
+    ctx.fillStyle = skyGradient;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // camera follow
-    // Smooth camera follow
+    // Camera follow (smoothed)
     let targetCameraX = player.x - canvas.width / 3;
     cameraX += (targetCameraX - cameraX) * 0.1;
 
     if (cameraX < 0) cameraX = 0;
     if (cameraX > levelWidth - canvas.width) cameraX = levelWidth - canvas.width;
-    // Handle level width smaller than canvas width
     if (levelWidth < canvas.width) {
         cameraX = (levelWidth - canvas.width) / 2;
     }
 
 
+    // 2. Draw World Elements (Platforms, Coins, Goal, Enemies)
+    
     // draw platforms
     for (let p of platforms) {
-      ctx.fillStyle = p.color;
-      ctx.fillRect(Math.floor(p.x - cameraX), Math.floor(p.y), p.width, p.height);
+      drawPlatform(p);
     }
 
-    // draw coins
+    // draw coins (using a simple circle)
     for (let c of coinsOnLevel) {
-      if (!c.collected) {
-        ctx.fillStyle = '#ffeb3b';
-        ctx.fillRect(Math.floor(c.x - cameraX), Math.floor(c.y), c.width, c.height);
-      }
+      ctx.fillStyle = '#fde047';
+      ctx.beginPath();
+      ctx.arc(Math.floor(c.x - cameraX + c.width/2), Math.floor(c.y + c.height/2), c.width/2, 0, Math.PI * 2);
+      ctx.fill();
+      // Simple inner detail
+      ctx.strokeStyle = '#b8860b';
+      ctx.lineWidth = 2;
+      ctx.stroke();
     }
 
     // draw power ups
     for (let pu of powerUps) {
       if (!pu.used) {
-        // Pulsing effect for power-up
-        const pulse = Math.abs(Math.sin(Date.now() / 300)) * 0.5 + 0.5; // 0.5 to 1.0
-        ctx.globalAlpha = pulse;
+        const pulse = Math.abs(Math.sin(Date.now() / 300)) * 0.5 + 0.5; 
+        ctx.globalAlpha = 1.0; 
+        
+        // Draw glow effect for better visibility
+        ctx.shadowColor = '#00e5ff';
+        ctx.shadowBlur = 15 * pulse; 
+
         ctx.fillStyle = '#00e5ff'; // Bright cyan
         ctx.fillRect(Math.floor(pu.x - cameraX), Math.floor(pu.y), pu.width, pu.height);
-        ctx.globalAlpha = 1.0; // Reset alpha
+        
+        ctx.shadowBlur = 0; // Reset shadow
+        
+        ctx.fillStyle = '#000';
+        ctx.font = "16px 'Press Start 2P'";
+        ctx.textAlign = 'center';
+        ctx.fillText("P", Math.floor(pu.x - cameraX + pu.width/2), Math.floor(pu.y + pu.height*0.75));
+        ctx.textAlign = 'left'; 
       }
     }
 
@@ -511,7 +674,7 @@
     ctx.fillStyle = goal.color;
     ctx.fillRect(Math.floor(goal.x - cameraX), Math.floor(goal.y), goal.width, goal.height);
     // Draw flag
-    ctx.fillStyle = '#4ade80'; // Green flag
+    ctx.fillStyle = '#ff6347'; // Tomato red flag
     ctx.beginPath();
     ctx.moveTo(Math.floor(goal.x - cameraX), Math.floor(goal.y));
     ctx.lineTo(Math.floor(goal.x - 25 - cameraX), Math.floor(goal.y+15));
@@ -521,80 +684,113 @@
 
     // draw enemies
     for (let e of enemies) {
-      ctx.fillStyle = e.color;
-      ctx.fillRect(Math.floor(e.x - cameraX), Math.floor(e.y), e.width, e.height);
+      drawEnemy(e);
     }
 
-    // draw bullets
+    // 3. Draw Bullets
     for (let b of bullets) {
       ctx.fillStyle = b.color;
-      ctx.fillRect(Math.floor(b.x - cameraX), Math.floor(b.y), b.width, b.height);
+      // Draw a small ellipse/rounded rectangle for more flair
+      ctx.beginPath();
+      ctx.roundRect(Math.floor(b.x - cameraX), Math.floor(b.y), b.width, b.height, 4);
+      ctx.fill();
     }
 
-    // draw player
-    // Change player color if powered up
-    ctx.fillStyle = player.poweredUp ? '#f87171' : '#e11d48'; // Lighter red when powered
-    ctx.fillRect(Math.floor(player.x - cameraX), Math.floor(player.y), player.width, player.height);
+    // 4. Draw Player
+    const pX = Math.floor(player.x - cameraX);
+    const pY = Math.floor(player.y);
+    const pW = player.width;
+    const pH = player.height;
+
+    // Draw powered-up glow/shadow
+    if (player.poweredUp) {
+      const glowPulse = Math.abs(Math.sin(Date.now() / 150)) * 0.5 + 0.5;
+      ctx.shadowColor = '#fde047'; // Yellow glow
+      ctx.shadowBlur = 10 * glowPulse;
+    }
     
-    // Draw player "eyes" to show direction
+    // Player Body
+    ctx.fillStyle = player.poweredUp ? '#f87171' : '#e11d48'; 
+    ctx.fillRect(pX, pY, pW, pH);
+    
+    // Player Outline
+    ctx.shadowBlur = 0; 
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(pX, pY, pW, pH);
+    
+    // Player Eyes (White)
     ctx.fillStyle = '#ffffff';
-    if (player.direction > 0) {
-        ctx.fillRect(Math.floor(player.x - cameraX + 20), Math.floor(player.y + 8), 6, 6);
-        ctx.fillRect(Math.floor(player.x - cameraX + 8), Math.floor(player.y + 8), 6, 6);
-    } else {
-        ctx.fillRect(Math.floor(player.x - cameraX + 6), Math.floor(player.y + 8), 6, 6);
-        ctx.fillRect(Math.floor(player.x - cameraX + 18), Math.floor(player.y + 8), 6, 6);
+    let eyeOffset = player.direction > 0 ? 20 : 6;
+    ctx.fillRect(pX + eyeOffset, pY + 8, 6, 6);
+    
+    // Player Pupils (Black, simple)
+    ctx.fillStyle = '#000000';
+    let pupilOffset = player.direction > 0 ? 22 : 8;
+    ctx.fillRect(pX + pupilOffset, pY + 10, 2, 2);
+    
+    // Draw Simple Feet (for grounding)
+    if (player.jumps === 0) { // On ground
+        ctx.fillStyle = '#333';
+        ctx.fillRect(pX + 3, pY + pH - 4, 8, 4);
+        ctx.fillRect(pX + pW - 11, pY + pH - 4, 8, 4);
     }
   }
 
   let animationFrameId = null;
   function loop() {
-    if (messageBox.style.display==='block') {
-       // Stop the loop if message is shown
-       if (animationFrameId) {
-           cancelAnimationFrame(animationFrameId);
-           animationFrameId = null;
-       }
-       return;
+    if (!gameRunning) {
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
+      animationFrameId = null;
+      return;
     }
     updatePlayer();
+    updateEnemiesAndBullets();
     draw();
     animationFrameId = requestAnimationFrame(loop);
   }
 
-  // Resize canvas logic
+  // --- Utility & Initialization ---
+
   function resizeCanvas() {
-        const aspectRatio = 16 / 9;
-        const container = canvas.parentElement;
-        const containerWidth = container.clientWidth;
-        const containerHeight = window.innerHeight * 0.8; // Use 80% of viewport height
+    const aspectRatio = 16 / 9;
+    const containerWidth = canvas.parentElement.clientWidth;
+    const containerHeight = window.innerHeight * 0.8; 
 
-        let newWidth = containerWidth;
-        let newHeight = newWidth / aspectRatio;
+    let newWidth = containerWidth;
+    let newHeight = newWidth / aspectRatio;
 
-        if (newHeight > containerHeight) {
-            newHeight = containerHeight;
-            newWidth = newHeight * aspectRatio;
-        }
+    if (newHeight > containerHeight) {
+      newHeight = containerHeight;
+      newWidth = newHeight * aspectRatio;
+    }
+    
+    // Clamp to a sensible max width for readability
+    if (newWidth > 800) {
+        newWidth = 800;
+        newHeight = 450;
+    }
 
-        // Don't set canvas.width/height directly as it clears the canvas
-        // and changes coordinate system. Use style instead.
-        canvas.style.width = `${newWidth}px`;
-        canvas.style.height = `${newHeight}px`;
+    canvas.style.width = `${newWidth}px`;
+    canvas.style.height = `${newHeight}px`;
   }
 
-  // Initial resize and add listener
+  // Initial load logic
   window.addEventListener('resize', resizeCanvas);
   
-  // Need to wrap init and loop in a load event to ensure fonts are ready
-  // and layout is stable for resizeCanvas
   window.addEventListener('load', () => {
-      resizeCanvas();
-      initLevel();
-      loop();
+    resizeCanvas();
+    // Initialize the gradient based on the correct canvas height/width
+    skyGradient.addColorStop(0, '#5c94fc'); 
+    skyGradient.addColorStop(1, '#a6c6ff'); 
+    
+    initLevel();
+    // Start message box shown on load, loop starts on button click
+    showMessage("Welcome to Block Jumper! Collect the 'P' for shooting power!");
   });
 
 </script>
 
 </body>
 </html>
+
