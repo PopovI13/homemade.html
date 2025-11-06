@@ -1,1 +1,888 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pixel Tower Climb</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+        
+        /* Custom styles for a pixel/arcade feel */
+        body {
+            background-color: #121212;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: #E0E0E0;
+            font-family: 'Press Start 2P', monospace;
+        }
 
+        #game-container {
+            border: 4px solid #FBC02D;
+            box-shadow: 0 0 20px rgba(251, 192, 45, 0.5);
+            border-radius: 8px;
+            overflow: hidden;
+            background-color: #000000; /* Tower interior */
+        }
+
+        canvas {
+            display: block;
+            background-color: #0d0d1a;
+            width: 100%;
+        }
+
+        .hud {
+            position: absolute;
+            top: 0.5rem;
+            width: 100%;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            padding: 0 1rem;
+            box-sizing: border-box;
+            color: #FBC02D;
+            text-shadow: 2px 2px #000;
+            font-size: 8px; /* Slightly smaller font for more space */
+        }
+        
+        /* New Shop Button Style */
+        .shop-button {
+            background-color: #E91E63;
+            color: white;
+            padding: 5px 8px;
+            border: 2px solid #AD1457;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 8px;
+            box-shadow: 2px 2px 0px #AD1457;
+            transition: all 0.05s;
+        }
+        .shop-button:active {
+            box-shadow: 0 0 0 #AD1457;
+            transform: translate(2px, 2px);
+        }
+
+        /* Shop Modal Styles */
+        .shop-modal {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.95);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: #FBC02D;
+            text-align: center;
+            padding: 20px;
+            box-sizing: border-box;
+            font-size: 10px;
+            z-index: 100;
+        }
+        .shop-item {
+            background: #212121;
+            border: 3px solid #FBC02D;
+            border-radius: 5px;
+            padding: 10px;
+            margin: 10px 0;
+            width: 80%;
+            max-width: 300px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .buy-btn {
+            background-color: #4CAF50;
+            color: black;
+            padding: 5px 10px;
+            border: 2px solid #388E3C;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 7px;
+            box-shadow: 2px 2px 0px #388E3C;
+        }
+        .buy-btn:disabled {
+            background-color: #757575;
+            border-color: #424242;
+            box-shadow: 2px 2px 0px #424242;
+            cursor: not-allowed;
+            color: #BDBDBD;
+        }
+        .buy-btn:not(:disabled):active {
+            box-shadow: 0 0 0 #388E3C;
+            transform: translate(2px, 2px);
+        }
+
+
+        .game-over-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: #FF5252;
+            text-align: center;
+            font-size: 14px;
+            z-index: 99;
+        }
+
+        .restart-button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: black;
+            border: 2px solid #388E3C;
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: 'Press Start+2P', monospace;
+            font-size: 8px;
+            box-shadow: 3px 3px 0px #388E3C;
+            transition: all 0.1s;
+        }
+
+        .restart-button:hover {
+            background-color: #66BB6A;
+            box-shadow: 1px 1px 0px #388E3C;
+            transform: translate(2px, 2px);
+        }
+
+        /* Mobile Controls */
+        #controls {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            display: flex;
+            justify-content: space-around;
+            padding: 10px;
+            box-sizing: border-box;
+            background: #212121;
+        }
+
+        .control-btn {
+            width: 70px; /* slightly smaller for space */
+            height: 70px;
+            background-color: #3F51B5;
+            color: white;
+            border: 2px solid #1A237E;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 10px;
+            cursor: pointer;
+            box-shadow: 0 5px 0 #1A237E;
+            transition: all 0.1s;
+        }
+
+        .control-btn:active {
+            box-shadow: 0 1px 0 #1A237E;
+            transform: translateY(4px);
+        }
+        /* Mobile shop button */
+        #mobileShopBtn {
+            font-size: 8px;
+            width: 70px;
+            height: 70px;
+            padding: 0;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            line-height: 1;
+        }
+        #mobileShopBtn span {
+            font-size: 12px;
+            margin-top: 2px;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="game-container" class="relative">
+        <canvas id="towerCanvas" width="360" height="600"></canvas>
+        <div class="hud" id="hud">
+            <div>SCORE: <span id="scoreValue">0</span></div>
+            <div>COINS: <span id="coinValue">0</span></div>
+            <div class="text-right">
+                <div id="upgradesDisplay">UPGRADES: None</div>
+                <button class="shop-button mt-1 hidden lg:block" onclick="openShop()">SHOP</button>
+            </div>
+        </div>
+        
+        <!-- Shop Modal -->
+        <div class="shop-modal" id="shopModal">
+            <h2>UPGRADE SHOP</h2>
+            <p class="mb-4">Current Coins: <span id="shopCoinValue">0</span></p>
+
+            <div class="shop-item">
+                <span>Double Jump (25 Coins)</span>
+                <button class="buy-btn" id="buyDoubleJump" onclick="buyUpgrade('doubleJump', 25)">BUY</button>
+            </div>
+            
+            <div class="shop-item">
+                <span>Coin Magnet (50 Coins)</span>
+                <button class="buy-btn" id="buyMagnet" onclick="buyUpgrade('magnet', 50)">BUY</button>
+            </div>
+
+            <div class="shop-item">
+                <span>Shield (75 Coins)</span>
+                <button class="buy-btn" id="buyShield" onclick="buyUpgrade('shield', 75)">BUY</button>
+            </div>
+
+            <button class="restart-button mt-6" onclick="closeShop()">CLOSE SHOP</button>
+        </div>
+
+        <div class="game-over-screen" id="gameOverScreen">
+            <h1>GAME OVER!</h1>
+            <p>You failed to keep climbing the tower.</p>
+            <p class="mt-4">Final Score: <span id="finalScore">0</span></p>
+            <p>Coins Banked This Run: <span id="finalCoins">0</span></p>
+            <button class="restart-button" onclick="restartGame()">RESTART</button>
+        </div>
+    </div>
+
+    <!-- Mobile Controls -->
+    <div id="controls" class="lg:hidden">
+        <button class="control-btn" id="leftBtn" ontouchstart="moveLeft(true)" ontouchend="moveLeft(false)">
+            <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+        </button>
+        <button class="control-btn shop-button" id="mobileShopBtn" onclick="openShop()">
+            SHOP
+        </button>
+        <button class="control-btn" id="rightBtn" ontouchstart="moveRight(true)" ontouchend="moveRight(false)">
+            <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg>
+        </button>
+        <button class="control-btn bg-red-500 border-red-800" id="jumpBtn" ontouchstart="handleJump()">
+            JUMP
+        </button>
+    </div>
+
+    <script>
+        // Changed const/let to var to prevent "Identifier already declared" errors in 
+        // environments that re-execute the script, as 'var' allows redeclaration.
+        var canvas = document.getElementById('towerCanvas');
+        var ctx = canvas.getContext('2d');
+        var W = canvas.width;
+        var H = canvas.height;
+
+        // --- Game Constants ---
+        
+        // Jump power settings
+        const GRAVITY = 0.65; 
+        const JUMP_POWER = -13; 
+        
+        const PLAYER_WIDTH = 15;
+        const PLAYER_HEIGHT = 20; 
+        // Player speed is now 3.0 for slower, more controlled horizontal movement.
+        const PLAYER_SPEED = 3.0; 
+        
+        const PLATFORM_HEIGHT = 10;
+        const PLATFORM_WIDTH_MIN = 60;
+        const PLATFORM_WIDTH_MAX = 120;
+        const PLATFORM_SPAWN_GAP = 70; 
+        const SCROLL_DEATH_SPEED = 0.2; 
+        const CAMERA_THRESHOLD = H * 0.4; 
+        const MAGNET_RADIUS = 150; 
+
+        // --- Game State (Currency is now persistent) ---
+        var player;
+        var platforms = [];
+        var coins = [];
+        var enemies = [];
+        var score = 0;
+        
+        // NEW: This holds the permanent, bankable coins (NOT reset on restart)
+        var permanentCoinBank = 0; 
+        // NEW: This tracks coins collected in the current run (RESET on restart)
+        var coinsCollectedThisRun = 0; 
+
+        var upgrades = {
+            doubleJump: false,
+            magnet: false,
+            shield: false
+        };
+        var gameOver = false;
+        var gamePaused = false;
+        var keys = { left: false, right: false };
+        var lastTime = 0;
+
+        // --- Classes (Unchanged) ---
+
+        class Player {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.width = PLAYER_WIDTH;
+                this.height = PLAYER_HEIGHT;
+                this.vx = 0;
+                this.vy = 0;
+                this.onGround = false;
+                this.jumpsLeft = 1;
+            }
+
+            update(deltaTime) {
+                if (gameOver) return;
+
+                // Apply gravity
+                this.vy += GRAVITY;
+
+                // Horizontal Movement
+                if (keys.left) {
+                    this.vx = -PLAYER_SPEED;
+                } else if (keys.right) {
+                    this.vx = PLAYER_SPEED;
+                } else {
+                    this.vx = 0;
+                }
+
+                // Apply velocity
+                this.x += this.vx;
+                this.y += this.vy;
+
+                // Screen wrapping (Horizontal)
+                if (this.x < -this.width) {
+                    this.x = W;
+                } else if (this.x > W) {
+                    this.x = -this.width;
+                }
+
+                // Double Jump logic update
+                const maxJumps = upgrades.doubleJump ? 2 : 1;
+                if (this.onGround) {
+                    this.jumpsLeft = maxJumps;
+                }
+            }
+
+            jump() {
+                if (this.jumpsLeft > 0) {
+                    this.vy = JUMP_POWER;
+                    this.onGround = false;
+                    this.jumpsLeft--;
+                }
+            }
+
+            draw() {
+                // Determine color based on shield status
+                const baseColor = upgrades.shield ? '#00FFFF' : '#9C27B0'; // Cyan when shielded, Purple otherwise
+                ctx.fillStyle = baseColor;
+                
+                let bodyY = this.y;
+                let bodyHeight = this.height;
+
+                // --- Dynamic Jump Pose ---
+                if (!this.onGround) {
+                    // When jumping or falling, draw the player slightly shorter (crouched)
+                    bodyHeight = this.height * 0.75; // Shorter body
+                    bodyY = this.y + (this.height - bodyHeight); // Shift body down to stay anchored to feet
+                }
+
+                // Draw Body (The main shape)
+                ctx.fillRect(this.x, bodyY, this.width, bodyHeight);
+
+                // Headband/Eyes (Simple white line for distinction)
+                ctx.fillStyle = '#FFFFFF';
+                // Draw the headband based on the calculated bodyY (top of the body)
+                ctx.fillRect(this.x, bodyY + 2, this.width, 2);
+
+                // Belt (Red)
+                ctx.fillStyle = '#FF5252'; 
+                ctx.fillRect(this.x, bodyY + bodyHeight - 3, this.width, 3);
+            }
+        }
+
+        class Platform {
+            constructor(x, y, width, type = 'static') {
+                this.x = x;
+                this.y = y;
+                this.width = width;
+                this.height = PLATFORM_HEIGHT;
+                this.type = type;
+                this.color = this.getColor(type);
+                this.isBroken = false;
+            }
+
+            getColor(type) {
+                switch (type) {
+                    case 'static': return '#4CAF50'; // Green
+                    case 'crumbling': return '#FFEB3B'; // Yellow
+                    case 'electrified': return '#FF5252'; // Red (Danger)
+                    case 'moving': return '#2196F3'; // Blue
+                    default: return '#4CAF50';
+                }
+            }
+
+            update(dy) {
+                this.y += dy;
+                // Add specific update logic here
+            }
+
+            draw() {
+                if (this.isBroken) return;
+                ctx.fillStyle = this.color;
+                ctx.fillRect(this.x, this.y, this.width, this.height);
+                
+                // Draw electricity/effect indicator for electrified platforms
+                if (this.type === 'electrified') {
+                    ctx.fillStyle = '#FFFFFF';
+                    ctx.fillRect(this.x, this.y, this.width, 2); 
+                    ctx.fillRect(this.x, this.y + this.height - 2, this.width, 2); 
+                }
+            }
+        }
+
+        class Coin {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.size = 10;
+                this.collected = false;
+                this.color = '#FFD700'; // Gold
+            }
+
+            update(dy) {
+                this.y += dy;
+            }
+
+            draw() {
+                if (this.collected) return;
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x + this.size / 2, this.y + this.size / 2, this.size / 2, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        class Enemy {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.width = 15;
+                this.height = 15;
+                this.color = '#C62828'; // Dark Red
+                this.vx = 1.5;
+            }
+
+            update(dy) {
+                this.y += dy;
+                
+                // Simple horizontal movement
+                this.x += this.vx;
+
+                // Bounce off walls
+                if (this.x < 0 || this.x + this.width > W) {
+                    this.vx *= -1;
+                }
+            }
+
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.fillRect(this.x, this.y, this.width, this.height);
+            }
+        }
+
+        // --- Game Functions ---
+
+        function initGame() {
+            // Reset session-specific state
+            gameOver = false;
+            gamePaused = false;
+            score = 0;
+            // ONLY RESET COINS COLLECTED IN THE CURRENT RUN, NOT THE PERMANENT BANK
+            coinsCollectedThisRun = 0;
+            platforms = [];
+            coins = [];
+            enemies = [];
+            
+            // Upgrades are reset but should be re-bought using the permanentCoinBank
+            upgrades.doubleJump = false; 
+            upgrades.magnet = false;
+            upgrades.shield = false;
+
+            document.getElementById('gameOverScreen').style.display = 'none';
+            closeShop(); // Ensure shop is closed
+
+            // Initialize Player at the center bottom
+            player = new Player(W / 2 - PLAYER_WIDTH / 2, H - PLAYER_HEIGHT - 50);
+
+            // Create initial platform
+            platforms.push(new Platform(W / 2 - 50, H - 50, 100, 'static'));
+
+            // Populate initial platforms
+            var currentY = H - 50 - PLATFORM_SPAWN_GAP;
+            while (currentY > 0) {
+                spawnPlatform(currentY);
+                currentY -= PLATFORM_SPAWN_GAP;
+            }
+            
+            // Start the game loop
+            lastTime = performance.now();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function spawnPlatform(y) {
+            const width = Math.random() * (PLATFORM_WIDTH_MAX - PLATFORM_WIDTH_MIN) + PLATFORM_WIDTH_MIN;
+            const x = Math.random() * (W - width);
+            
+            // Randomly select platform type
+            const r = Math.random();
+            var type = 'static';
+            if (score > 500 && r < 0.2) type = 'crumbling';
+            else if (score > 2000 && r < 0.15) type = 'electrified';
+            else if (score > 4000 && r < 0.1) type = 'moving';
+
+            const newPlatform = new Platform(x, y, width, type);
+            platforms.push(newPlatform);
+
+            // Coin Spawning (30% chance)
+            if (Math.random() < 0.3) {
+                coins.push(new Coin(x + width / 2 - 5, y - 20));
+            }
+            
+            // Enemy Spawning (10% chance on static platforms after score threshold)
+            if (type === 'static' && score > 1500 && Math.random() < 0.1) {
+                const enemyX = x + width / 2 - 7.5; // Center enemy on platform
+                const enemyY = y - 15;
+                enemies.push(new Enemy(enemyX, enemyY));
+            }
+        }
+
+        function checkCollision() {
+            player.onGround = false;
+
+            for (const p of platforms) {
+                if (p.isBroken) continue;
+
+                // AABB Collision Check (Player <-> Platform)
+                if (player.x < p.x + p.width &&
+                    player.x + player.width > p.x &&
+                    player.y + player.height > p.y &&
+                    player.y + player.height < p.y + p.height) {
+
+                    // Check if player is falling (vy > 0)
+                    if (player.vy > 0) {
+                        // Land on the platform
+                        player.y = p.y - player.height;
+                        player.vy = 0;
+                        player.onGround = true;
+
+                        // Apply platform specific effects
+                        switch (p.type) {
+                            case 'crumbling':
+                                p.isBroken = true; // Simple break effect
+                                break;
+                            case 'electrified':
+                                handleHazardHit();
+                                break;
+                        }
+                    }
+                }
+            }
+
+            // Check Enemy Collision
+            for (const e of enemies) {
+                if (player.x < e.x + e.width &&
+                    player.x + player.width > e.x &&
+                    player.y < e.y + e.height &&
+                    player.y + player.height > e.y) {
+                    
+                    handleHazardHit();
+                    // Optional: remove enemy after contact if not shielded
+                    if (!upgrades.shield) {
+                        enemies = enemies.filter(enemy => enemy !== e);
+                    }
+                    return;
+                }
+            }
+        }
+
+        function handleHazardHit() {
+            if (upgrades.shield) {
+                // Shield absorbs the hit and is lost
+                upgrades.shield = false;
+            } else {
+                // No shield, game over
+                endGame();
+            }
+        }
+
+        function checkCoinCollection() {
+            // Coin Magnet logic
+            if (upgrades.magnet) {
+                const playerCenterX = player.x + player.width / 2;
+                const playerCenterY = player.y + player.height / 2;
+
+                coins.forEach(coin => {
+                    if (coin.collected) return;
+
+                    const coinCenterX = coin.x + coin.size / 2;
+                    const coinCenterY = coin.y + coin.size / 2;
+                    
+                    const dx = playerCenterX - coinCenterX;
+                    const dy = playerCenterY - coinCenterY;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+
+                    if (distance < MAGNET_RADIUS) {
+                        // Pull coin towards player
+                        const ratio = 1 - (distance / MAGNET_RADIUS); // closer = stronger pull
+                        const pullSpeed = 5 * ratio;
+
+                        coin.x += (dx / distance) * pullSpeed;
+                        coin.y += (dy / distance) * pullSpeed;
+                    }
+                });
+            }
+
+            // Check for collection (now or after magnet pull)
+            coins = coins.filter(coin => {
+                if (coin.collected) return false;
+
+                // Simple rectangular collision check for coin
+                if (player.x < coin.x + coin.size &&
+                    player.x + player.width > coin.x &&
+                    player.y < coin.y + coin.size &&
+                    player.y + player.height > coin.y) {
+                    
+                    // INCREMENT THE PERMANENT BANK
+                    permanentCoinBank += 1;
+                    // INCREMENT THE RUN TRACKER FOR GAME OVER SCREEN
+                    coinsCollectedThisRun += 1; 
+                    return false; // Remove coin
+                }
+                return true;
+            });
+        }
+
+        // --- Shop Functions ---
+        function updateShopUI() {
+            // SHOP USES THE PERMANENT BANK
+            document.getElementById('shopCoinValue').textContent = permanentCoinBank;
+
+            const updateButton = (id, upgrade, cost) => {
+                const btn = document.getElementById(id);
+                if (upgrades[upgrade]) {
+                    btn.textContent = 'OWNED';
+                    btn.disabled = true;
+                } 
+                // CHECK AGAINST PERMANENT BANK
+                else if (permanentCoinBank < cost) {
+                    btn.textContent = `(${cost})`;
+                    btn.disabled = true;
+                } else {
+                    btn.textContent = `BUY (${cost})`;
+                    btn.disabled = false;
+                }
+            };
+
+            updateButton('buyDoubleJump', 'doubleJump', 25);
+            updateButton('buyMagnet', 'magnet', 50);
+            updateButton('buyShield', 'shield', 75);
+        }
+
+        function openShop() {
+            if (gameOver) return;
+            gamePaused = true;
+            document.getElementById('shopModal').style.display = 'flex';
+            updateShopUI();
+        }
+
+        function closeShop() {
+            gamePaused = false;
+            document.getElementById('shopModal').style.display = 'none';
+            // Resume the loop if it was paused
+            if (!gameOver) {
+                requestAnimationFrame(gameLoop);
+            }
+        }
+
+        function buyUpgrade(upgradeName, cost) {
+            // CHECK AGAINST AND DEDUCT FROM PERMANENT BANK
+            if (permanentCoinBank >= cost && !upgrades[upgradeName]) {
+                permanentCoinBank -= cost;
+                upgrades[upgradeName] = true;
+                
+                console.log(`Purchased ${upgradeName} for ${cost} coins!`);
+                updateShopUI();
+                updateHUD();
+            }
+        }
+        // --- End Shop Functions ---
+
+
+        function endGame() {
+            gameOver = true;
+            gamePaused = true;
+            document.getElementById('finalScore').textContent = score.toFixed(0);
+            // Display coins banked from this run
+            document.getElementById('finalCoins').textContent = coinsCollectedThisRun; 
+            document.getElementById('gameOverScreen').style.display = 'flex';
+        }
+
+        function updateHUD() {
+            const currentUpgrades = [];
+            if (upgrades.doubleJump) currentUpgrades.push('DJ');
+            if (upgrades.magnet) currentUpgrades.push('Magnet');
+            if (upgrades.shield) currentUpgrades.push('Shield');
+
+            document.getElementById('scoreValue').textContent = score.toFixed(0);
+            // HUD displays the permanent coin bank
+            document.getElementById('coinValue').textContent = permanentCoinBank; 
+            document.getElementById('upgradesDisplay').textContent = `UPGRADES: ${currentUpgrades.join(' / ') || 'None'}`;
+        }
+
+        function update(deltaTime) {
+            if (gameOver || gamePaused) return;
+
+            player.update(deltaTime);
+            checkCollision();
+            checkCoinCollection();
+
+            // 1. Vertical Scrolling Logic (Camera follows player when they ascend past the threshold)
+            var worldDy = 0;
+            if (player.y < CAMERA_THRESHOLD) {
+                worldDy = CAMERA_THRESHOLD - player.y;
+                player.y = CAMERA_THRESHOLD; // Keep player fixed on screen
+                score += worldDy * 0.1; // Increase score based on distance climbed
+            }
+
+            // 2. Scroll Death Mechanic (constant upward scroll / world downward shift)
+            worldDy += SCROLL_DEATH_SPEED;
+            
+            // Apply world shift to all objects
+            platforms.forEach(p => p.update(worldDy));
+            coins.forEach(c => c.update(worldDy));
+            enemies.forEach(e => e.update(worldDy));
+
+            // Cleanup objects that have scrolled off screen
+            platforms = platforms.filter(p => p.y < H);
+            // Coins are NOT filtered out here, so they remain in the world forever.
+            enemies = enemies.filter(e => e.y < H);
+
+            // Generate new platforms when the topmost one goes off screen
+            if (platforms.length === 0 || platforms.reduce((prev, current) => (prev.y < current.y) ? prev : current).y > 0) {
+                 // Find the highest platform Y or use H if none exists
+                const topY = platforms.length > 0 ? platforms.reduce((prev, current) => (prev.y < current.y) ? prev : current).y : H;
+                
+                var nextY = topY - PLATFORM_SPAWN_GAP;
+                while (nextY > -PLATFORM_SPAWN_GAP) {
+                    spawnPlatform(nextY);
+                    nextY -= PLATFORM_SPAWN_GAP;
+                }
+            }
+            
+            // Game Over: Falling off the bottom of the screen
+            if (player.y > H) {
+                endGame();
+            }
+
+            updateHUD();
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, W, H);
+            ctx.fillStyle = '#0d0d1a'; // Dark tower background
+            ctx.fillRect(0, 0, W, H);
+
+            // Draw platforms
+            platforms.forEach(p => p.draw());
+
+            // Draw enemies
+            enemies.forEach(e => e.draw());
+
+            // Draw coins (Drawn last so they appear over platforms but under the player)
+            coins.forEach(c => c.draw());
+
+            // Draw player
+            player.draw();
+        }
+
+        function gameLoop(timestamp) {
+            if (gameOver || gamePaused) return;
+
+            const deltaTime = timestamp - lastTime;
+            lastTime = timestamp;
+
+            // A typical refresh rate is 60fps (16.67ms per frame)
+            update(deltaTime / 16.67); 
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // --- Input Handlers ---
+        
+        function handleKeyDown(event) {
+            if (gameOver || gamePaused) return;
+            switch (event.key) {
+                case 'ArrowLeft':
+                case 'a':
+                    keys.left = true;
+                    break;
+                case 'ArrowRight':
+                case 'd':
+                    keys.right = true;
+                    break;
+                case ' ':
+                case 'ArrowUp':
+                case 'w':
+                    handleJump();
+                    break;
+                case 'Escape':
+                    // Use 'S' for shop or 'P' for pause if you want less conflict
+                    openShop();
+                    break;
+            }
+        }
+
+        function handleKeyUp(event) {
+            if (gamePaused) return;
+            switch (event.key) {
+                case 'ArrowLeft':
+                case 'a':
+                    keys.left = false;
+                    break;
+                case 'ArrowRight':
+                case 'd':
+                    keys.right = false;
+                    break;
+            }
+        }
+        
+        // Touch/Button Control Functions
+        function moveLeft(isPressed) { keys.left = isPressed; }
+        function moveRight(isPressed) { keys.right = isPressed; }
+        function handleJump() {
+            if (!gameOver && !gamePaused) {
+                player.jump();
+            } else if (gameOver) {
+                restartGame();
+            }
+        }
+
+        // --- Utility ---
+        function restartGame() {
+            initGame();
+        }
+
+        // --- Initialization ---
+        window.addEventListener('keydown', handleKeyDown);
+        window.addEventListener('keyup', handleKeyUp);
+        
+        window.onload = function() {
+             // Upgrades now start as false, forcing the player to earn them
+             initGame();
+        };
+
+    </script>
+</body>
+</html>
