@@ -1,1 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Batman vs Superman</title>
+  <style>
+    body {
+      font-family: "Segoe UI", sans-serif;
+      text-align: center;
+      background: linear-gradient(120deg, #1a1a1a, #222);
+      color: white;
+      margin: 0;
+      padding: 20px;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+    }
+
+    .container {
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      gap: 40px;
+      margin-top: 30px;
+      flex-wrap: wrap;
+    }
+
+    .hero {
+      background: #333;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.4);
+      width: 250px;
+      transition: transform 0.2s;
+    }
+
+    .hero:hover {
+      transform: scale(1.03);
+    }
+
+    .hero img {
+      width: 100%;
+      border-radius: 10px;
+    }
+
+    button {
+      margin-top: 15px;
+      background: crimson;
+      border: none;
+      color: white;
+      padding: 10px 15px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: background 0.3s;
+    }
+
+    button:hover {
+      background: darkred;
+    }
+
+    p {
+      font-size: 1.1rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>Batman vs Superman</h1>
+  <p>Who’s your favorite hero? Click to vote!</p>
+
+  <div class="container">
+    <div class="hero" id="batman">
+      <img src="batman.jpg" alt="Batman">
+      <button onclick="vote('batman')">Vote Batman</button>
+      <p id="batman-votes">Votes: 0</p>
+    </div>
+
+    <div class="hero" id="superman">
+      <img src="superman.jpg" alt="Superman">
+      <button onclick="vote('superman')">Vote Superman</button>
+      <p id="superman-votes">Votes: 0</p>
+    </div>
+  </div>
+
+  <script>
+    let votes = {
+      batman: 0,
+      superman: 0
+    };
+
+    function vote(hero) {
+      votes[hero]++;
+      document.getElementById(`${hero}-votes`).innerText = `Votes: ${votes[hero]}`;
+      localStorage.setItem('votes', JSON.stringify(votes));
+    }
+
+    window.onload = () => {
+      const savedVotes = JSON.parse(localStorage.getItem('votes'));
+      if (savedVotes) {
+        votes = savedVotes;
+        document.getElementById("batman-votes").innerText = `Votes: ${votes.batman}`;
+        document.getElementById("superman-votes").innerText = `Votes: ${votes.superman}`;
+      }
+    };
+  </script>
+</body>
+</html>
+
 
