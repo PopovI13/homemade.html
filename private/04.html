@@ -34,6 +34,7 @@
       box-shadow: 0 0 15px rgba(0,0,0,0.4);
       width: 250px;
       transition: transform 0.2s;
+      position: relative;
     }
 
     .hero:hover {
@@ -45,20 +46,22 @@
       border-radius: 10px;
     }
 
-    button {
-      margin-top: 15px;
-      background: crimson;
-      border: none;
-      color: white;
-      padding: 10px 15px;
-      border-radius: 5px;
+    .like-btn {
+      font-size: 2rem;
+      color: #666;
       cursor: pointer;
-      font-size: 1rem;
-      transition: background 0.3s;
+      transition: color 0.3s, transform 0.2s;
+      margin-top: 10px;
     }
 
-    button:hover {
-      background: darkred;
+    .like-btn:hover {
+      color: #ff6666;
+      transform: scale(1.2);
+    }
+
+    .liked {
+      color: #ff3366;
+      transform: scale(1.3);
     }
 
     p {
@@ -68,44 +71,48 @@
 </head>
 <body>
   <h1>Batman vs Superman</h1>
-  <p>Who’s your favorite hero? Click to vote!</p>
+  <p>Like your favorite hero!</p>
 
   <div class="container">
     <div class="hero" id="batman">
       <img src="batman.jpg" alt="Batman">
-      <button onclick="vote('batman')">Vote Batman</button>
-      <p id="batman-votes">Votes: 0</p>
+      <div class="like-btn" onclick="likeHero('batman')">❤️</div>
+      <p id="batman-status">Not liked yet</p>
     </div>
 
     <div class="hero" id="superman">
       <img src="superman.jpg" alt="Superman">
-      <button onclick="vote('superman')">Vote Superman</button>
-      <p id="superman-votes">Votes: 0</p>
+      <div class="like-btn" onclick="likeHero('superman')">❤️</div>
+      <p id="superman-status">Not liked yet</p>
     </div>
   </div>
 
   <script>
-    let votes = {
-      batman: 0,
-      superman: 0
-    };
+    let likedHero = localStorage.getItem('likedHero');
 
-    function vote(hero) {
-      votes[hero]++;
-      document.getElementById(`${hero}-votes`).innerText = `Votes: ${votes[hero]}`;
-      localStorage.setItem('votes', JSON.stringify(votes));
+    function likeHero(hero) {
+      if (likedHero && likedHero !== hero) {
+        alert("You already liked " + likedHero.charAt(0).toUpperCase() + likedHero.slice(1) + "!");
+        return;
+      }
+
+      likedHero = hero;
+      localStorage.setItem('likedHero', hero);
+
+      document.querySelectorAll('.like-btn').forEach(btn => btn.classList.remove('liked'));
+      document.querySelectorAll('p').forEach(p => p.innerText = 'Not liked yet');
+
+      document.querySelector(`#${hero} .like-btn`).classList.add('liked');
+      document.getElementById(`${hero}-status`).innerText = "You liked this!";
     }
 
+    // Load saved choice
     window.onload = () => {
-      const savedVotes = JSON.parse(localStorage.getItem('votes'));
-      if (savedVotes) {
-        votes = savedVotes;
-        document.getElementById("batman-votes").innerText = `Votes: ${votes.batman}`;
-        document.getElementById("superman-votes").innerText = `Votes: ${votes.superman}`;
+      if (likedHero) {
+        document.querySelector(`#${likedHero} .like-btn`).classList.add('liked');
+        document.getElementById(`${likedHero}-status`).innerText = "You liked this!";
       }
     };
   </script>
 </body>
 </html>
-
-
