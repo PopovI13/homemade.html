@@ -166,10 +166,7 @@ async function fetchAnimal(animal) {
         div.innerHTML = `<h2>Here's your ${animal.replace("_"," ")}</h2>
                          <img src="${imageUrl}" alt="${animal}" />`;
 
-        // Add spider with glitter
-        const spider = document.createElement('div');
-        spider.className = 'spider';
-        div.appendChild(spider);
+     
 
         for (let i = 0; i < 8; i++) {
             const glitter = document.createElement('div');
