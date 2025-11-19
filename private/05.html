@@ -131,15 +131,16 @@
       case "cat":
         url = "https://api.thecatapi.com/v1/images/search";
         break;
-      case "koala":
-        url = "https://some-random-api.ml/img/koala";
-        break;
-      case "panda":
-        url = "https://some-random-api.ml/img/panda";
-        break;
-      case "red_panda":
-        url = "https://some-random-api.ml/img/red_panda";
-        break;
+      switch(animal) {
+  case "koala":
+    url = "https://api.some-random-api.com/img/koala";
+    break;
+  case "panda":
+    url = "https://api.some-random-api.com/img/panda";
+    break;
+  case "red_panda":
+    url = "https://api.some-random-api.com/img/red_panda";
+    break;
       case "rabbit":
         url = "https://randomfox.ca/floof/"; // surprise: show coyote-like
         isSurprise = true;
