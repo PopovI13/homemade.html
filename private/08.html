@@ -168,16 +168,6 @@ async function fetchAnimal(animal) {
                          <img src="${imageUrl}" alt="${animal}" />`;
 
      
-
-        for (let i = 0; i < 8; i++) {
-            const glitter = document.createElement('div');
-            glitter.className = 'glitter';
-            glitter.style.top = Math.random() * 80 + "%";
-            glitter.style.left = Math.random() * 80 + "%";
-            glitter.style.animationDuration = (Math.random() * 2 + 1) + "s";
-            div.appendChild(glitter);
-        }
-
     } catch(err) {
         console.error(err);
         document.getElementById('myDiv1').innerText = "Failed to load image!";
