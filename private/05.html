@@ -119,65 +119,68 @@
 <div id="myDiv1">Click a button to see a cute animal!</div>
 
 <script>
-  async function fetchAnimal(animal) {
+async function fetchAnimal(animal) {
     let url = "";
+    let prop = "";
 
     switch(animal) {
-      case "fox":
-        url = "https://randomfox.ca/floof/";
-        break;
-      case "cat":
-        url = "https://api.thecatapi.com/v1/images/search";
-        break;
-      case "koala":
-        url = "https://api.some-random-api.com/img/koala";
-        break;
-      case "panda":
-        url = "https://api.some-random-api.com/img/panda";
-        break;
-      case "red_panda":
-        url = "https://api.some-random-api.com/img/red_panda";
-        break;
+        case "fox":
+            url = "https://randomfox.ca/floof/";
+            prop = "image";
+            break;
+        case "cat":
+            url = "https://api.thecatapi.com/v1/images/search";
+            prop = "url";
+            break;
+        case "koala":
+            url = "https://api.some-random-api.com/img/koala";
+            prop = "link";
+            break;
+        case "panda":
+            url = "https://api.some-random-api.com/img/panda";
+            prop = "link";
+            break;
+        case "red_panda":
+            url = "https://api.some-random-api.com/img/red_panda";
+            prop = "link";
+            break;
     }
 
     try {
-      const response = await fetch(url);
-      const data = await response.json();
+        const response = await fetch(url);
+        const data = await response.json();
 
-      let imageUrl = "";
-      if (Array.isArray(data)) {
-        imageUrl = data[0].url || data[0].link;
-      } else {
-        imageUrl = data.link || data.image || data.url || data.message;
-      }
+        let imageUrl = "";
+        if (Array.isArray(data)) {
+            imageUrl = data[0][prop] || data[0].link;
+        } else {
+            imageUrl = data[prop] || data.link || data[0]?.url;
+        }
 
-      const div = document.getElementById('myDiv1');
-      div.innerHTML = `
-        <h2>Here's your cute ${animal.replace("_"," ")}</h2>
-        <img src="${imageUrl}" alt="${animal}">
-      `;
+        const div = document.getElementById('myDiv1');
+        div.innerHTML = `<h2>Here's your ${animal.replace("_"," ")}</h2>
+                         <img src="${imageUrl}" alt="${animal}" />`;
 
-      // Add spider with glitter
-      const spider = document.createElement('div');
-      spider.className = 'spider';
-      div.appendChild(spider);
+        // Add spider with glitter
+        const spider = document.createElement('div');
+        spider.className = 'spider';
+        div.appendChild(spider);
 
-      for (let i = 0; i < 8; i++) {
-        const glitter = document.createElement('div');
-        glitter.className = 'glitter';
-        glitter.style.top = Math.random() * 80 + "%";
-        glitter.style.left = Math.random() * 80 + "%";
-        glitter.style.animationDuration = (Math.random() * 2 + 1) + "s";
-        div.appendChild(glitter);
-      }
+        for (let i = 0; i < 8; i++) {
+            const glitter = document.createElement('div');
+            glitter.className = 'glitter';
+            glitter.style.top = Math.random() * 80 + "%";
+            glitter.style.left = Math.random() * 80 + "%";
+            glitter.style.animationDuration = (Math.random() * 2 + 1) + "s";
+            div.appendChild(glitter);
+        }
 
     } catch(err) {
-      console.error(err);
-      document.getElementById('myDiv1').innerHTML = "Failed to load image!";
+        console.error(err);
+        document.getElementById('myDiv1').innerText = "Failed to load image!";
     }
-  }
+}
 </script>
 
 </body>
 </html>
-
