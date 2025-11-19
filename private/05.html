@@ -64,7 +64,7 @@
       background: #333;
       border-radius: 50%;
       position: absolute;
-      bottom: 0;
+      bottom: 10px;
       left: 50%;
       transform: translateX(-50%);
       animation: spin 3s linear infinite;
@@ -115,14 +115,12 @@
 <button class="animal-btn" onclick="fetchAnimal('koala')">🐨 Koala</button>
 <button class="animal-btn" onclick="fetchAnimal('panda')">🐼 Panda</button>
 <button class="animal-btn" onclick="fetchAnimal('red_panda')">🦊 Red Panda</button>
-<button class="animal-btn" onclick="fetchAnimal('rabbit')">🐰 Rabbit</button>
 
 <div id="myDiv1">Click a button to see a cute animal!</div>
 
 <script>
   async function fetchAnimal(animal) {
     let url = "";
-    let isSurprise = false;
 
     switch(animal) {
       case "fox":
@@ -131,19 +129,14 @@
       case "cat":
         url = "https://api.thecatapi.com/v1/images/search";
         break;
-      switch(animal) {
-  case "koala":
-    url = "https://api.some-random-api.com/img/koala";
-    break;
-  case "panda":
-    url = "https://api.some-random-api.com/img/panda";
-    break;
-  case "red_panda":
-    url = "https://api.some-random-api.com/img/red_panda";
-    break;
-      case "rabbit":
-        url = "https://randomfox.ca/floof/"; // surprise: show coyote-like
-        isSurprise = true;
+      case "koala":
+        url = "https://api.some-random-api.com/img/koala";
+        break;
+      case "panda":
+        url = "https://api.some-random-api.com/img/panda";
+        break;
+      case "red_panda":
+        url = "https://api.some-random-api.com/img/red_panda";
         break;
     }
 
@@ -152,34 +145,30 @@
       const data = await response.json();
 
       let imageUrl = "";
-
-      // Handle different API formats
       if (Array.isArray(data)) {
-        imageUrl = data[0].url || data[0].link || "";
+        imageUrl = data[0].url || data[0].link;
       } else {
-        imageUrl = data.image || data.link || data.url || data.message || "";
+        imageUrl = data.link || data.image || data.url || data.message;
       }
 
       const div = document.getElementById('myDiv1');
       div.innerHTML = `
-        <h2>${isSurprise ? "Surprise! 🐺" : "Here's your cute " + animal}</h2>
+        <h2>Here's your cute ${animal.replace("_"," ")}</h2>
         <img src="${imageUrl}" alt="${animal}">
       `;
 
-      // Only show spider & glitter if rabbit button clicked
-      if(animal === "rabbit") {
-        const spider = document.createElement('div');
-        spider.className = 'spider';
-        div.appendChild(spider);
+      // Add spider with glitter
+      const spider = document.createElement('div');
+      spider.className = 'spider';
+      div.appendChild(spider);
 
-        for (let i = 0; i < 8; i++) {
-          const glitter = document.createElement('div');
-          glitter.className = 'glitter';
-          glitter.style.top = Math.random() * 80 + "%";
-          glitter.style.left = Math.random() * 80 + "%";
-          glitter.style.animationDuration = (Math.random() * 2 + 1) + "s";
-          div.appendChild(glitter);
-        }
+      for (let i = 0; i < 8; i++) {
+        const glitter = document.createElement('div');
+        glitter.className = 'glitter';
+        glitter.style.top = Math.random() * 80 + "%";
+        glitter.style.left = Math.random() * 80 + "%";
+        glitter.style.animationDuration = (Math.random() * 2 + 1) + "s";
+        div.appendChild(glitter);
       }
 
     } catch(err) {
