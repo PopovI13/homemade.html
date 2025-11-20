@@ -1,1 +1,137 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Fun Facts & Quotes Gallery</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f7ff;
+      margin: 0;
+      padding: 20px;
+      text-align: center;
+    }
+
+    h1 {
+      color: #333;
+    }
+
+    .api-btn {
+      padding: 12px 20px;
+      margin: 5px;
+      font-size: 16px;
+      border-radius: 8px;
+      border: none;
+      background-color: #8ec5ff;
+      color: white;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    .api-btn:hover {
+      background-color: #5bb1ff;
+    }
+
+    #outputBox {
+      margin-top: 30px;
+      padding: 20px;
+      background: white;
+      width: 80%;
+      max-width: 700px;
+      margin-left: auto;
+      margin-right: auto;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      animation: fadeIn 0.5s;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .sparkle {
+      width: 12px;
+      height: 12px;
+      background: radial-gradient(circle, #fff, #ffdd00);
+      border-radius: 50%;
+      position: absolute;
+      animation: sparkleMove 2s infinite;
+    }
+
+    @keyframes sparkleMove {
+      0% { transform: translate(0, 0); opacity: 1; }
+      50% { transform: translate(20px, -30px); opacity: 0.5; }
+      100% { transform: translate(-10px, -10px); opacity: 1; }
+    }
+  </style>
+</head>
+
+<body>
+
+<h1>Fun Facts & Random Generators</h1>
+
+<button class="api-btn" onclick="fetchAPI('activity')">🎲 Random Activity</button>
+<button class="api-btn" onclick="fetchAPI('advice')">💡 Random Advice</button>
+<button class="api-btn" onclick="fetchAPI('anime_quote')">🎌 Anime Quote</button>
+<button class="api-btn" onclick="fetchAPI('kanye')">😎 Kanye Quote</button>
+<button class="api-btn" onclick="fetchAPI('number')">🔢 Number Fact</button>
+
+<div id="outputBox">Click a button to see something cool!</div>
+
+<script>
+async function fetchAPI(type) {
+    let url = "";
+
+    switch(type) {
+        case "activity":
+            url = "https://www.boredapi.com/api/activity";
+            break;
+        case "advice":
+            url = "https://api.adviceslip.com/advice";
+            break;
+        case "anime_quote":
+            url = "https://animechan.xyz/api/random";
+            break;
+        case "kanye":
+            url = "https://api.kanye.rest";
+            break;
+        case "number":
+            const rand = Math.floor(Math.random() * 500);
+            url = `http://numbersapi.com/${rand}?json`;
+            break;
+    }
+
+    try {
+        const response = await fetch(url);
+        const data = await response.json();
+        let text = "";
+
+        if (type === "activity") text = data.activity;
+        else if (type === "advice") text = data.slip.advice;
+        else if (type === "anime_quote") text = `"${data.quote}" — ${data.character}`;
+        else if (type === "kanye") text = `Kanye says: "${data.quote}"`;
+        else if (type === "number") text = data.text;
+
+        document.getElementById("outputBox").innerHTML = `<h2>${text}</h2>`;
+
+        // Add sparkles!
+        for (let i = 0; i < 4; i++) {
+            let sparkle = document.createElement("div");
+            sparkle.className = "sparkle";
+            sparkle.style.top = (Math.random()*150 + 10) + "px";
+            sparkle.style.left = (Math.random()*500 + 50) + "px";
+            document.getElementById("outputBox").appendChild(sparkle);
+
+            setTimeout(() => sparkle.remove(), 2000);
+        }
+
+    } catch (err) {
+        document.getElementById("outputBox").innerText = "Something went wrong!";
+        console.error(err);
+    }
+}
+</script>
+
+</body>
+</html>
 
