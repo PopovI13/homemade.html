@@ -1,137 +1,190 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Fun Facts & Quotes Gallery</title>
+  <title>Space Image Explorer</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #f0f7ff;
-      margin: 0;
-      padding: 20px;
+      background: #050505;
+      color: white;
       text-align: center;
+      padding: 20px;
     }
 
     h1 {
-      color: #333;
+      margin-bottom: 20px;
+      color: #8ab4ff;
     }
 
-    .api-btn {
+    .space-btn {
       padding: 12px 20px;
       margin: 5px;
       font-size: 16px;
       border-radius: 8px;
       border: none;
-      background-color: #8ec5ff;
+      background-color: #1a73e8;
       color: white;
       cursor: pointer;
-      transition: background 0.3s;
+      transition: 0.3s;
     }
 
-    .api-btn:hover {
-      background-color: #5bb1ff;
+    .space-btn:hover {
+      background-color: #5393ff;
+      transform: scale(1.05);
     }
 
-    #outputBox {
+    #output {
       margin-top: 30px;
       padding: 20px;
-      background: white;
+      background: #111;
       width: 80%;
       max-width: 700px;
       margin-left: auto;
       margin-right: auto;
       border-radius: 10px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-      animation: fadeIn 0.5s;
+      box-shadow: 0 4px 10px rgba(255,255,255,0.1);
+      position: relative;
+      overflow: hidden;
     }
 
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
+    img {
+      max-width: 100%;
+      border-radius: 10px;
+      margin-top: 20px;
+      animation: pop 0.5s ease-out;
     }
 
-    .sparkle {
-      width: 12px;
-      height: 12px;
-      background: radial-gradient(circle, #fff, #ffdd00);
-      border-radius: 50%;
+    @keyframes pop {
+      0% { transform: scale(0.6); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .star {
       position: absolute;
-      animation: sparkleMove 2s infinite;
+      width: 4px;
+      height: 4px;
+      background: white;
+      border-radius: 50%;
+      animation: twinkle 2s infinite;
     }
 
-    @keyframes sparkleMove {
-      0% { transform: translate(0, 0); opacity: 1; }
-      50% { transform: translate(20px, -30px); opacity: 0.5; }
-      100% { transform: translate(-10px, -10px); opacity: 1; }
+    @keyframes twinkle {
+      0%,100% { opacity: 0.2; }
+      50% { opacity: 1; }
     }
   </style>
 </head>
 
 <body>
 
-<h1>Fun Facts & Random Generators</h1>
+<h1>🚀 Space Image Explorer 🌌</h1>
 
-<button class="api-btn" onclick="fetchAPI('activity')">🎲 Random Activity</button>
-<button class="api-btn" onclick="fetchAPI('advice')">💡 Random Advice</button>
-<button class="api-btn" onclick="fetchAPI('anime_quote')">🎌 Anime Quote</button>
-<button class="api-btn" onclick="fetchAPI('kanye')">😎 Kanye Quote</button>
-<button class="api-btn" onclick="fetchAPI('number')">🔢 Number Fact</button>
+<button class="space-btn" onclick="showSpace('planet')">🪐 Random Planet</button>
+<button class="space-btn" onclick="showSpace('moon')">🌙 Random Moon</button>
+<button class="space-btn" onclick="showSpace('apod')">☄️ NASA APOD</button>
+<button class="space-btn" onclick="showSpace('galaxy')">🌌 Random Galaxy</button>
+<button class="space-btn" onclick="showSpace('craft')">🛰 Random Spacecraft</button>
 
-<div id="outputBox">Click a button to see something cool!</div>
+<div id="output">Click any button to explore the universe!</div>
 
 <script>
-async function fetchAPI(type) {
-    let url = "";
+const planetImages = {
+  "earth": "https://upload.wikimedia.org/wikipedia/commons/9/97/The_Earth_seen_from_Apollo_17.jpg",
+  "mars": "https://upload.wikimedia.org/wikipedia/commons/0/02/OSIRIS_Mars_true_color.jpg",
+  "jupiter": "https://upload.wikimedia.org/wikipedia/commons/e/e2/Jupiter.jpg",
+  "saturn": "https://upload.wikimedia.org/wikipedia/commons/c/c7/Saturn_during_Equinox.jpg",
+  "venus": "https://upload.wikimedia.org/wikipedia/commons/8/85/Venus_globe.jpg",
+  "neptune": "https://upload.wikimedia.org/wikipedia/commons/5/56/Neptune_Full.jpg",
+  "uranus": "https://upload.wikimedia.org/wikipedia/commons/3/3d/Uranus2.jpg"
+};
 
-    switch(type) {
-        case "activity":
-            url = "https://www.boredapi.com/api/activity";
-            break;
-        case "advice":
-            url = "https://api.adviceslip.com/advice";
-            break;
-        case "anime_quote":
-            url = "https://animechan.xyz/api/random";
-            break;
-        case "kanye":
-            url = "https://api.kanye.rest";
-            break;
-        case "number":
-            const rand = Math.floor(Math.random() * 500);
-            url = `http://numbersapi.com/${rand}?json`;
-            break;
+const moonImages = [
+  "https://upload.wikimedia.org/wikipedia/commons/e/e1/FullMoon2010.jpg",
+  "https://upload.wikimedia.org/wikipedia/commons/4/4e/Moon_and_Stars.jpg",
+  "https://upload.wikimedia.org/wikipedia/commons/3/3c/Moon_Topography.jpg"
+];
+
+const galaxyImages = [
+  "https://source.unsplash.com/featured/?galaxy",
+  "https://source.unsplash.com/featured/?nebula",
+  "https://source.unsplash.com/featured/?andromeda"
+];
+
+const spacecraftImages = [
+  "https://upload.wikimedia.org/wikipedia/commons/d/d6/SpaceX_Crew_Dragon_%28cropped%29.jpg",
+  "https://upload.wikimedia.org/wikipedia/commons/9/97/STS120LaunchHiRes-edit1.jpg",
+  "https://upload.wikimedia.org/wikipedia/commons/e/e5/Cassini_Saturn_Orbit_Insertion.jpg"
+];
+
+async function showSpace(type) {
+  let output = document.getElementById("output");
+  output.innerHTML = "Loading...";
+
+  try {
+    if (type === "planet") {
+      const res = await fetch("https://api.le-systeme-solaire.net/rest/bodies/");
+      const data = await res.json();
+      const planets = data.bodies.filter(b => b.isPlanet);
+
+      const random = planets[Math.floor(Math.random()*planets.length)];
+      const img = planetImages[random.englishName.toLowerCase()] || galaxyImages[0];
+
+      output.innerHTML = `<h2>${random.englishName}</h2>
+                          <img src="${img}" />`;
     }
 
-    try {
-        const response = await fetch(url);
-        const data = await response.json();
-        let text = "";
+    else if (type === "moon") {
+      const name = ["Moon", "Europa", "Ganymede", "Titan"][Math.floor(Math.random()*4)];
+      const img = moonImages[Math.floor(Math.random()*moonImages.length)];
 
-        if (type === "activity") text = data.activity;
-        else if (type === "advice") text = data.slip.advice;
-        else if (type === "anime_quote") text = `"${data.quote}" — ${data.character}`;
-        else if (type === "kanye") text = `Kanye says: "${data.quote}"`;
-        else if (type === "number") text = data.text;
-
-        document.getElementById("outputBox").innerHTML = `<h2>${text}</h2>`;
-
-        // Add sparkles!
-        for (let i = 0; i < 4; i++) {
-            let sparkle = document.createElement("div");
-            sparkle.className = "sparkle";
-            sparkle.style.top = (Math.random()*150 + 10) + "px";
-            sparkle.style.left = (Math.random()*500 + 50) + "px";
-            document.getElementById("outputBox").appendChild(sparkle);
-
-            setTimeout(() => sparkle.remove(), 2000);
-        }
-
-    } catch (err) {
-        document.getElementById("outputBox").innerText = "Something went wrong!";
-        console.error(err);
+      output.innerHTML = `<h2>${name}</h2>
+                          <img src="${img}">`;
     }
+
+    else if (type === "apod") {
+      const res = await fetch("https://api.nasa.gov/planetary/apod?api_key=DEMO_KEY");
+      const data = await res.json();
+
+      output.innerHTML = `<h2>${data.title}</h2>
+                          <img src="${data.url}">
+                          <p>${data.explanation}</p>`;
+    }
+
+    else if (type === "galaxy") {
+      const img = galaxyImages[Math.floor(Math.random()*galaxyImages.length)];
+
+      output.innerHTML = `<h2>Galaxy</h2>
+                          <img src="${img}">`;
+    }
+
+    else if (type === "craft") {
+      const img = spacecraftImages[Math.floor(Math.random()*spacecraftImages.length)];
+
+      output.innerHTML = `<h2>Spacecraft</h2>
+                          <img src="${img}">`;
+    }
+
+    addStars();
+
+  } catch(err) {
+    console.error(err);
+    output.innerHTML = "Error loading data.";
+  }
+}
+
+function addStars() {
+  const box = document.getElementById("output");
+  for (let i = 0; i < 15; i++) {
+    const star = document.createElement("div");
+    star.classList.add("star");
+    star.style.top = Math.random()*250 + "px";
+    star.style.left = Math.random()*650 + "px";
+    box.appendChild(star);
+
+    setTimeout(()=>star.remove(),2000);
+  }
 }
 </script>
 
 </body>
 </html>
-
