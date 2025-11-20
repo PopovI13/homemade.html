@@ -56,21 +56,6 @@
       from { transform: scale(.7); opacity: 0; }
       to   { transform: scale(1); opacity: 1; }
     }
-
-    /* Stars */
-    .star {
-      position: absolute;
-      width: 4px;
-      height: 4px;
-      background: white;
-      border-radius: 50%;
-      animation: twinkle 2s infinite;
-    }
-
-    @keyframes twinkle {
-      0%,100% { opacity: .2; }
-      50% { opacity: 1; }
-    }
   </style>
 </head>
 
@@ -80,98 +65,75 @@
 
 <button class="btn" onclick="showSpace('apod')">🌞 NASA Photo of the Day</button>
 <button class="btn" onclick="showSpace('planet')">🪐 Random Planet</button>
-<button class="btn" onclick="showSpace('galaxy')">🌌 Random Galaxy</button>
-<button class="btn" onclick="showSpace('nebula')">✨ Random Nebula</button>
-<button class="btn" onclick="showSpace('stars')">⭐ Random Starfield</button>
+<button class="btn" onclick="showSpace('galaxy')">🌌 Galaxy</button>
+<button class="btn" onclick="showSpace('nebula')">✨ Nebula</button>
+<button class="btn" onclick="showSpace('stars')">⭐ Starfield</button>
 
 <div id="box">Click a button to view space images!</div>
 
 <script>
-// Planet images (Wikimedia - always works)
-const planetImages = [
+const galaxies = [
+  "https://upload.wikimedia.org/wikipedia/commons/7/7f/Hubble_ultra_deep_field.jpg",
+  "https://upload.wikimedia.org/wikipedia/commons/7/7d/Andromeda_Galaxy_(with_h-alpha).jpg",
+  "https://upload.wikimedia.org/wikipedia/commons/6/6f/Triangulum_Galaxy_by_HST.jpg"
+];
+
+const nebulas = [
+  "https://upload.wikimedia.org/wikipedia/commons/3/3f/Orion_Nebula_-_Hubble_2006_mosaic_18000.jpg",
+  "https://upload.wikimedia.org/wikipedia/commons/0/00/Eagle_Nebula_Pillars_of_Creation_2014_HST_WFC3-UVIS-F502N-F657N.jpg",
+  "https://upload.wikimedia.org/wikipedia/commons/5/5f/Crab_Nebula.jpg"
+];
+
+const starfields = [
+  "https://upload.wikimedia.org/wikipedia/commons/0/09/ESO_-_Milky_Way.jpg",
+  "https://upload.wikimedia.org/wikipedia/commons/0/05/Starsinthesky.jpg",
+  "https://upload.wikimedia.org/wikipedia/commons/3/3a/Very_Large_Telescope_view_of_a_starry_sky.jpg"
+];
+
+const planets = [
   "https://upload.wikimedia.org/wikipedia/commons/9/97/The_Earth_seen_from_Apollo_17.jpg",
   "https://upload.wikimedia.org/wikipedia/commons/0/02/OSIRIS_Mars_true_color.jpg",
-  "https://upload.wikimedia.org/wikipedia/commons/c/c7/Saturn_during_Equinox.jpg",
   "https://upload.wikimedia.org/wikipedia/commons/e/e2/Jupiter.jpg",
-  "https://upload.wikimedia.org/wikipedia/commons/3/3d/Uranus2.jpg",
-  "https://upload.wikimedia.org/wikipedia/commons/5/56/Neptune_Full.jpg",
-  "https://upload.wikimedia.org/wikipedia/commons/8/85/Venus_globe.jpg"
-];
-
-// Unsplash space categories (no API key needed)
-const galaxyImages = [
-  "https://source.unsplash.com/featured/?galaxy",
-  "https://source.unsplash.com/featured/?andromeda",
-  "https://source.unsplash.com/featured/?milkyway"
-];
-
-const nebulaImages = [
-  "https://source.unsplash.com/featured/?nebula",
-  "https://source.unsplash.com/featured/?orion+nebula",
-  "https://source.unsplash.com/featured/?space+cloud"
-];
-
-const starfieldImages = [
-  "https://source.unsplash.com/featured/?starfield",
-  "https://source.unsplash.com/featured/?stars",
-  "https://source.unsplash.com/featured/?night+sky"
+  "https://upload.wikimedia.org/wikipedia/commons/c/c7/Saturn_during_Equinox.jpg"
 ];
 
 async function showSpace(type) {
   const box = document.getElementById("box");
   box.innerHTML = "Loading...";
 
-  try {
-    if (type === "apod") {
-      // NASA APOD API - works with demo key
-      const res = await fetch("https://api.nasa.gov/planetary/apod?api_key=DEMO_KEY");
-      const data = await res.json();
+  // NASA APOD is the ONLY one we fetch
+  if (type === "apod") {
+    const res = await fetch("https://api.nasa.gov/planetary/apod?api_key=DEMO_KEY");
+    const data = await res.json();
 
-      box.innerHTML = `
-        <h2>${data.title}</h2>
-        <img src="${data.url}">
-        <p>${data.explanation}</p>
-      `;
-    }
-
-    if (type === "planet") {
-      const img = planetImages[Math.floor(Math.random() * planetImages.length)];
-      box.innerHTML = `<h2>Planet</h2><img src="${img}">`;
-    }
-
-    if (type === "galaxy") {
-      const img = galaxyImages[Math.floor(Math.random() * galaxyImages.length)];
-      box.innerHTML = `<h2>Galaxy</h2><img src="${img}">`;
-    }
-
-    if (type === "nebula") {
-      const img = nebulaImages[Math.floor(Math.random() * nebulaImages.length)];
-      box.innerHTML = `<h2>Nebula</h2><img src="${img}">`;
-    }
-
-    if (type === "stars") {
-      const img = starfieldImages[Math.floor(Math.random() * starfieldImages.length)];
-      box.innerHTML = `<h2>Starfield</h2><img src="${img}">`;
-    }
-
-    addStars();
-
-  } catch (err) {
-    box.innerHTML = "Error loading space image.";
-    console.error(err);
+    box.innerHTML = `
+      <h2>${data.title}</h2>
+      <img src="${data.url}">
+      <p>${data.explanation}</p>
+    `;
+    return;
   }
-}
 
-function addStars() {
-  const box = document.getElementById("box");
-  for (let i = 0; i < 12; i++) {
-    const star = document.createElement("div");
-    star.classList.add("star");
-    star.style.top = Math.random() * 250 + "px";
-    star.style.left = Math.random() * 650 + "px";
-    box.appendChild(star);
+  let img = "";
 
-    setTimeout(() => star.remove(), 2000);
+  if (type === "planet") {
+    img = planets[Math.floor(Math.random() * planets.length)];
+    box.innerHTML = `<h2>Planet</h2><img src="${img}">`;
+  }
+
+  if (type === "galaxy") {
+    img = galaxies[Math.floor(Math.random() * galaxies.length)];
+    box.innerHTML = `<h2>Galaxy</h2><img src="${img}">`;
+  }
+
+  if (type === "nebula") {
+    img = nebulas[Math.floor(Math.random() * nebulas.length)];
+    box.innerHTML = `<h2>Nebula</h2><img src="${img}">`;
+  }
+
+  if (type === "stars") {
+    img = starfields[Math.floor(Math.random() * starfields.length)];
+    box.innerHTML = `<h2>Starfield</h2><img src="${img}">`;
   }
 }
 </script>
