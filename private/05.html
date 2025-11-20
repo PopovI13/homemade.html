@@ -1,22 +1,22 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Space Image Explorer</title>
+  <title>Space Image Gallery</title>
   <style>
     body {
       font-family: Arial, sans-serif;
       background: #050505;
-      color: white;
+      color: #fefefe;
       text-align: center;
       padding: 20px;
     }
 
     h1 {
+      color: #89b4ff;
       margin-bottom: 20px;
-      color: #8ab4ff;
     }
 
-    .space-btn {
+    .btn {
       padding: 12px 20px;
       margin: 5px;
       font-size: 16px;
@@ -25,15 +25,15 @@
       background-color: #1a73e8;
       color: white;
       cursor: pointer;
-      transition: 0.3s;
+      transition: 0.2s;
     }
 
-    .space-btn:hover {
-      background-color: #5393ff;
+    .btn:hover {
+      background-color: #4a90ff;
       transform: scale(1.05);
     }
 
-    #output {
+    #box {
       margin-top: 30px;
       padding: 20px;
       background: #111;
@@ -42,23 +42,22 @@
       margin-left: auto;
       margin-right: auto;
       border-radius: 10px;
-      box-shadow: 0 4px 10px rgba(255,255,255,0.1);
-      position: relative;
-      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(255,255,255,0.08);
     }
 
     img {
       max-width: 100%;
       border-radius: 10px;
       margin-top: 20px;
-      animation: pop 0.5s ease-out;
+      animation: pop .4s ease-out;
     }
 
     @keyframes pop {
-      0% { transform: scale(0.6); opacity: 0; }
-      100% { transform: scale(1); opacity: 1; }
+      from { transform: scale(.7); opacity: 0; }
+      to   { transform: scale(1); opacity: 1; }
     }
 
+    /* Stars */
     .star {
       position: absolute;
       width: 4px;
@@ -69,7 +68,7 @@
     }
 
     @keyframes twinkle {
-      0%,100% { opacity: 0.2; }
+      0%,100% { opacity: .2; }
       50% { opacity: 1; }
     }
   </style>
@@ -77,111 +76,102 @@
 
 <body>
 
-<h1>🚀 Space Image Explorer 🌌</h1>
+<h1>🚀 Space Image Gallery 🌌</h1>
 
-<button class="space-btn" onclick="showSpace('planet')">🪐 Random Planet</button>
-<button class="space-btn" onclick="showSpace('moon')">🌙 Random Moon</button>
-<button class="space-btn" onclick="showSpace('apod')">☄️ NASA APOD</button>
-<button class="space-btn" onclick="showSpace('galaxy')">🌌 Random Galaxy</button>
-<button class="space-btn" onclick="showSpace('craft')">🛰 Random Spacecraft</button>
+<button class="btn" onclick="showSpace('apod')">🌞 NASA Photo of the Day</button>
+<button class="btn" onclick="showSpace('planet')">🪐 Random Planet</button>
+<button class="btn" onclick="showSpace('galaxy')">🌌 Random Galaxy</button>
+<button class="btn" onclick="showSpace('nebula')">✨ Random Nebula</button>
+<button class="btn" onclick="showSpace('stars')">⭐ Random Starfield</button>
 
-<div id="output">Click any button to explore the universe!</div>
+<div id="box">Click a button to view space images!</div>
 
 <script>
-const planetImages = {
-  "earth": "https://upload.wikimedia.org/wikipedia/commons/9/97/The_Earth_seen_from_Apollo_17.jpg",
-  "mars": "https://upload.wikimedia.org/wikipedia/commons/0/02/OSIRIS_Mars_true_color.jpg",
-  "jupiter": "https://upload.wikimedia.org/wikipedia/commons/e/e2/Jupiter.jpg",
-  "saturn": "https://upload.wikimedia.org/wikipedia/commons/c/c7/Saturn_during_Equinox.jpg",
-  "venus": "https://upload.wikimedia.org/wikipedia/commons/8/85/Venus_globe.jpg",
-  "neptune": "https://upload.wikimedia.org/wikipedia/commons/5/56/Neptune_Full.jpg",
-  "uranus": "https://upload.wikimedia.org/wikipedia/commons/3/3d/Uranus2.jpg"
-};
-
-const moonImages = [
-  "https://upload.wikimedia.org/wikipedia/commons/e/e1/FullMoon2010.jpg",
-  "https://upload.wikimedia.org/wikipedia/commons/4/4e/Moon_and_Stars.jpg",
-  "https://upload.wikimedia.org/wikipedia/commons/3/3c/Moon_Topography.jpg"
+// Planet images (Wikimedia - always works)
+const planetImages = [
+  "https://upload.wikimedia.org/wikipedia/commons/9/97/The_Earth_seen_from_Apollo_17.jpg",
+  "https://upload.wikimedia.org/wikipedia/commons/0/02/OSIRIS_Mars_true_color.jpg",
+  "https://upload.wikimedia.org/wikipedia/commons/c/c7/Saturn_during_Equinox.jpg",
+  "https://upload.wikimedia.org/wikipedia/commons/e/e2/Jupiter.jpg",
+  "https://upload.wikimedia.org/wikipedia/commons/3/3d/Uranus2.jpg",
+  "https://upload.wikimedia.org/wikipedia/commons/5/56/Neptune_Full.jpg",
+  "https://upload.wikimedia.org/wikipedia/commons/8/85/Venus_globe.jpg"
 ];
 
+// Unsplash space categories (no API key needed)
 const galaxyImages = [
   "https://source.unsplash.com/featured/?galaxy",
-  "https://source.unsplash.com/featured/?nebula",
-  "https://source.unsplash.com/featured/?andromeda"
+  "https://source.unsplash.com/featured/?andromeda",
+  "https://source.unsplash.com/featured/?milkyway"
 ];
 
-const spacecraftImages = [
-  "https://upload.wikimedia.org/wikipedia/commons/d/d6/SpaceX_Crew_Dragon_%28cropped%29.jpg",
-  "https://upload.wikimedia.org/wikipedia/commons/9/97/STS120LaunchHiRes-edit1.jpg",
-  "https://upload.wikimedia.org/wikipedia/commons/e/e5/Cassini_Saturn_Orbit_Insertion.jpg"
+const nebulaImages = [
+  "https://source.unsplash.com/featured/?nebula",
+  "https://source.unsplash.com/featured/?orion+nebula",
+  "https://source.unsplash.com/featured/?space+cloud"
+];
+
+const starfieldImages = [
+  "https://source.unsplash.com/featured/?starfield",
+  "https://source.unsplash.com/featured/?stars",
+  "https://source.unsplash.com/featured/?night+sky"
 ];
 
 async function showSpace(type) {
-  let output = document.getElementById("output");
-  output.innerHTML = "Loading...";
+  const box = document.getElementById("box");
+  box.innerHTML = "Loading...";
 
   try {
-    if (type === "planet") {
-      const res = await fetch("https://api.le-systeme-solaire.net/rest/bodies/");
-      const data = await res.json();
-      const planets = data.bodies.filter(b => b.isPlanet);
-
-      const random = planets[Math.floor(Math.random()*planets.length)];
-      const img = planetImages[random.englishName.toLowerCase()] || galaxyImages[0];
-
-      output.innerHTML = `<h2>${random.englishName}</h2>
-                          <img src="${img}" />`;
-    }
-
-    else if (type === "moon") {
-      const name = ["Moon", "Europa", "Ganymede", "Titan"][Math.floor(Math.random()*4)];
-      const img = moonImages[Math.floor(Math.random()*moonImages.length)];
-
-      output.innerHTML = `<h2>${name}</h2>
-                          <img src="${img}">`;
-    }
-
-    else if (type === "apod") {
+    if (type === "apod") {
+      // NASA APOD API - works with demo key
       const res = await fetch("https://api.nasa.gov/planetary/apod?api_key=DEMO_KEY");
       const data = await res.json();
 
-      output.innerHTML = `<h2>${data.title}</h2>
-                          <img src="${data.url}">
-                          <p>${data.explanation}</p>`;
+      box.innerHTML = `
+        <h2>${data.title}</h2>
+        <img src="${data.url}">
+        <p>${data.explanation}</p>
+      `;
     }
 
-    else if (type === "galaxy") {
-      const img = galaxyImages[Math.floor(Math.random()*galaxyImages.length)];
-
-      output.innerHTML = `<h2>Galaxy</h2>
-                          <img src="${img}">`;
+    if (type === "planet") {
+      const img = planetImages[Math.floor(Math.random() * planetImages.length)];
+      box.innerHTML = `<h2>Planet</h2><img src="${img}">`;
     }
 
-    else if (type === "craft") {
-      const img = spacecraftImages[Math.floor(Math.random()*spacecraftImages.length)];
+    if (type === "galaxy") {
+      const img = galaxyImages[Math.floor(Math.random() * galaxyImages.length)];
+      box.innerHTML = `<h2>Galaxy</h2><img src="${img}">`;
+    }
 
-      output.innerHTML = `<h2>Spacecraft</h2>
-                          <img src="${img}">`;
+    if (type === "nebula") {
+      const img = nebulaImages[Math.floor(Math.random() * nebulaImages.length)];
+      box.innerHTML = `<h2>Nebula</h2><img src="${img}">`;
+    }
+
+    if (type === "stars") {
+      const img = starfieldImages[Math.floor(Math.random() * starfieldImages.length)];
+      box.innerHTML = `<h2>Starfield</h2><img src="${img}">`;
     }
 
     addStars();
 
-  } catch(err) {
+  } catch (err) {
+    box.innerHTML = "Error loading space image.";
     console.error(err);
-    output.innerHTML = "Error loading data.";
   }
 }
 
 function addStars() {
-  const box = document.getElementById("output");
-  for (let i = 0; i < 15; i++) {
+  const box = document.getElementById("box");
+  for (let i = 0; i < 12; i++) {
     const star = document.createElement("div");
     star.classList.add("star");
-    star.style.top = Math.random()*250 + "px";
-    star.style.left = Math.random()*650 + "px";
+    star.style.top = Math.random() * 250 + "px";
+    star.style.left = Math.random() * 650 + "px";
     box.appendChild(star);
 
-    setTimeout(()=>star.remove(),2000);
+    setTimeout(() => star.remove(), 2000);
   }
 }
 </script>
