@@ -1,124 +1,43 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Space Image Gallery</title>
+  <title>Offline Space Gallery</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #030303;
-      color: #fefefe;
-      text-align: center;
-      padding: 20px;
-    }
-
-    h1 {
-      margin-bottom: 20px;
-      color: #80b6ff;
-    }
-
-    .btn {
-      padding: 12px 20px;
-      margin: 5px;
-      font-size: 16px;
-      border-radius: 8px;
-      border: none;
-      background-color: #1a73e8;
-      color: white;
-      cursor: pointer;
-      transition: 0.25s;
-    }
-
-    .btn:hover {
-      background-color: #4d90fe;
-      transform: scale(1.05);
-    }
-
-    #box {
-      margin-top: 30px;
-      padding: 20px;
-      background: #111;
-      width: 80%;
-      max-width: 700px;
-      margin-left: auto;
-      margin-right: auto;
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(255,255,255,0.1);
-    }
-
-    img {
-      max-width: 100%;
-      border-radius: 10px;
-      margin-top: 20px;
-      animation: pop .4s ease-out;
-    }
-
-    @keyframes pop {
-      from { transform: scale(.7); opacity: 0; }
-      to   { transform: scale(1); opacity: 1; }
-    }
-
+    body { text-align:center; background:#000; color:white; font-family:Arial; }
+    .btn { padding:10px 20px; background:#1a73e8; border:none; color:white; margin:5px; }
+    img { max-width:80%; border-radius:10px; margin-top:20px; }
   </style>
 </head>
 
 <body>
 
-<h1>🚀 Space Image Gallery</h1>
+<h1>Offline Space Image Gallery</h1>
 
-<button class="btn" onclick="show('galaxy')">🌌 Galaxy</button>
-<button class="btn" onclick="show('nebula')">✨ Nebula</button>
-<button class="btn" onclick="show('planet')">🪐 Planet</button>
-<button class="btn" onclick="show('stars')">⭐ Starfield</button>
-<button class="btn" onclick="show('craft')">🛰 Spacecraft</button>
+<button class="btn" onclick="show(0)">Galaxy</button>
+<button class="btn" onclick="show(1)">Nebula</button>
+<button class="btn" onclick="show(2)">Planet</button>
+<button class="btn" onclick="show(3)">Stars</button>
+<button class="btn" onclick="show(4)">Spacecraft</button>
 
-<div id="box">Click a button to load a space picture!</div>
+<div id="box">Click a button!</div>
 
 <script>
-const galaxies = [
-  "https://upload.wikimedia.org/wikipedia/commons/7/7f/Hubble_ultra_deep_field.jpg",
-  "https://upload.wikimedia.org/wikipedia/commons/7/7d/Andromeda_Galaxy_%28with_h-alpha%29.jpg",
-  "https://upload.wikimedia.org/wikipedia/commons/6/6f/Triangulum_Galaxy_by_HST.jpg"
+const images = [
+  // Galaxy
+  "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD... (shortened)",
+  // Nebula
+  "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD... (shortened)",
+  // Planet
+  "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD... (shortened)",
+  // Stars
+  "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD... (shortened)",
+  // Spacecraft
+  "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD... (shortened)"
 ];
 
-const nebulas = [
-  "https://upload.wikimedia.org/wikipedia/commons/3/3f/Orion_Nebula_-_Hubble_2006_mosaic_18000.jpg",
-  "https://upload.wikimedia.org/wikipedia/commons/0/00/Eagle_Nebula_Pillars_of_Creation_2014_HST_WFC3-UVIS-F502N-F657N.jpg",
-  "https://upload.wikimedia.org/wikipedia/commons/5/5f/Crab_Nebula.jpg"
-];
-
-const planets = [
-  "https://upload.wikimedia.org/wikipedia/commons/9/97/The_Earth_seen_from_Apollo_17.jpg",
-  "https://upload.wikimedia.org/wikipedia/commons/0/02/OSIRIS_Mars_true_color.jpg",
-  "https://upload.wikimedia.org/wikipedia/commons/e/e2/Jupiter.jpg",
-  "https://upload.wikimedia.org/wikipedia/commons/c/c7/Saturn_during_Equinox.jpg"
-];
-
-const starfields = [
-  "https://upload.wikimedia.org/wikipedia/commons/0/09/ESO_-_Milky_Way.jpg",
-  "https://upload.wikimedia.org/wikipedia/commons/0/05/Starsinthesky.jpg",
-  "https://upload.wikimedia.org/wikipedia/commons/3/3a/Very_Large_Telescope_view_of_a_starry_sky.jpg"
-];
-
-const spacecraft = [
-  "https://upload.wikimedia.org/wikipedia/commons/d/d6/SpaceX_Crew_Dragon_%28cropped%29.jpg",
-  "https://upload.wikimedia.org/wikipedia/commons/1/17/STS120LaunchHiRes-edit1.jpg",
-  "https://upload.wikimedia.org/wikipedia/commons/e/e5/Cassini_Saturn_Orbit_Insertion.jpg"
-];
-
-function show(type) {
-  let list;
-
-  if (type === "galaxy") list = galaxies;
-  if (type === "nebula") list = nebulas;
-  if (type === "planet") list = planets;
-  if (type === "stars") list = starfields;
-  if (type === "craft") list = spacecraft;
-
-  const img = list[Math.floor(Math.random() * list.length)];
-
-  document.getElementById("box").innerHTML = `
-    <h2>${type.toUpperCase()}</h2>
-    <img src="${img}">
-  `;
+function show(i){
+  document.getElementById("box").innerHTML = 
+    `<img src="${images[i]}">`;
 }
 </script>
 
