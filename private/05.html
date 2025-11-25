@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Control Panel</title>
+<title>Tiny Game Hub</title>
 <style>
     body {
         margin: 0;
@@ -10,184 +10,245 @@
         color: #0ff;
         font-family: 'Orbitron', sans-serif;
         height: 100vh;
-        overflow: hidden;
         display: flex;
         justify-content: center;
         align-items: center;
     }
 
-    #panel {
+    #hub {
         width: 90%;
         max-width: 900px;
         padding: 30px;
         border: 2px solid #0ff;
         border-radius: 20px;
-        box-shadow: 0 0 25px #0ff;
         background: rgba(0, 0, 20, 0.7);
+        box-shadow: 0 0 25px #0ff;
     }
 
     h1 {
         text-align: center;
-        margin-top: 0;
+        margin: 0;
         color: #0ff;
         text-shadow: 0 0 10px #0ff;
     }
 
-    .controls {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 20px;
+    #games {
         margin-top: 30px;
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
     }
 
-    .btn, .toggle, .slider-container {
-        padding: 20px;
+    .game {
+        padding: 25px;
         border: 1px solid #0ff;
         border-radius: 15px;
         text-align: center;
         cursor: pointer;
-        background: rgba(0, 255, 255, 0.1);
-        box-shadow: 0 0 15px #0ff;
-        transition: 0.2s;
-        user-select: none;
+        background: rgba(0,255,255,0.1);
+        transition: .2s;
+        box-shadow: 0 0 10px #0ff;
     }
 
-    .btn:hover, .toggle:hover {
-        transform: scale(1.05);
-        box-shadow: 0 0 25px #0ff;
-    }
-
-    .toggle.active {
-        background: #0ff;
-        color: #000;
-        box-shadow: 0 0 15px #0ff inset;
-    }
-
-    input[type=range] {
-        width: 100%;
+    .game:hover {
+        transform: scale(1.07);
+        box-shadow: 0 0 20px #0ff;
     }
 
     #screen {
         margin-top: 25px;
-        height: 180px;
+        height: 260px;
         border: 2px solid #0ff;
         border-radius: 10px;
         background: #000;
+        text-align: center;
         display: flex;
         justify-content: center;
         align-items: center;
-        font-size: 1.3rem;
-        text-shadow: 0 0 8px #0ff;
+        font-size: 1.4rem;
+        position: relative;
+        overflow: hidden;
     }
 
-    /* Hyperdrive animation */
-    @keyframes hyperdrive {
-        0% { background: black; }
-        20% { background: radial-gradient(circle, #0ff, black); }
-        50% { background: radial-gradient(circle, white, #0ff); }
-        100% { background: black; }
+    .dot {
+        width: 40px;
+        height: 40px;
+        background: #0ff;
+        border-radius: 50%;
+        position: absolute;
+        cursor: pointer;
+    }
+
+    .block {
+        width: 40px;
+        height: 40px;
+        background: red;
+        position: absolute;
+        top: -40px;
+    }
+
+    .tile {
+        width: 60px;
+        height: 60px;
+        background: #0ff4;
+        border: 1px solid #0ff;
+        display: inline-block;
+        margin: 6px;
+        cursor: pointer;
+    }
+
+    .tile.active {
+        background: #0ff;
     }
 </style>
 </head>
 <body>
 
-<div id="panel">
-    <h1>🚀 Control Panel</h1>
+<div id="hub">
+    <h1>🎮 Tiny Game Hub</h1>
 
-    <div class="controls">
-        <div class="btn" id="pulseBtn">Pulse Screen</div>
-        <div class="toggle" id="alarmToggle">Alarm</div>
-        <div class="btn" id="hyperBtn">Engage Hyperdrive</div>
-
-        <div class="slider-container">
-            Brightness<br>
-            <input type="range" id="brightSlider" min="0" max="100" value="50">
-        </div>
-
-        <div class="slider-container">
-            Color Shift<br>
-            <input type="range" id="colorSlider" min="0" max="360" value="180">
-        </div>
-
-        <div class="toggle" id="gridToggle">Grid Mode</div>
+    <div id="games">
+        <div class="game" id="reactionGame">⚡ Reaction Time</div>
+        <div class="game" id="catchGame">🟢 Catch the Dot</div>
+        <div class="game" id="memoryGame">🧠 Memory Tiles</div>
+        <div class="game" id="dodgeGame">⬇️ Dodge the Blocks</div>
     </div>
 
-    <div id="screen">System Idle</div>
+    <div id="screen">Select a game to begin</div>
 </div>
 
 <script>
 const screen = document.getElementById("screen");
 
-/* ----------- SOUND EFFECTS ----------- */
-function playSound(url) {
-    const a = new Audio(url);
-    a.volume = 0.4;
-    a.play();
-}
+/* ----------- REACTION GAME ----------- */
+document.getElementById("reactionGame").onclick = () => {
+    screen.innerHTML = "Wait for green...";
+    screen.style.background = "#300";
 
-/* ----------- BUTTONS ----------- */
+    const delay = Math.random() * 2000 + 1000;
 
-document.getElementById("pulseBtn").onclick = () => {
-    screen.style.background = "rgba(0,255,255,0.2)";
-    screen.innerHTML = "Pulsing...";
-    playSound("https://assets.mixkit.co/sfx/preview/mixkit-arcade-mechanical-bling-210.wav");
+    let start;
 
     setTimeout(() => {
-        screen.style.background = "#000";
-        screen.innerHTML = "System Idle";
-    }, 800);
+        screen.innerHTML = "CLICK!";
+        screen.style.background = "#030";
+        start = performance.now();
+
+        screen.onclick = () => {
+            const time = (performance.now() - start).toFixed(0);
+            screen.innerHTML = `Your time: ${time}ms`;
+            screen.style.background = "#000";
+            screen.onclick = null;
+        };
+    }, delay);
 };
 
-document.getElementById("hyperBtn").onclick = () => {
-    screen.innerHTML = "⚡ HYPERDRIVE ENGAGED ⚡";
-    screen.style.animation = "hyperdrive 1s ease";
+/* ----------- CATCH THE DOT ----------- */
+document.getElementById("catchGame").onclick = () => {
+    screen.innerHTML = "";
+    screen.style.background = "#000";
 
-    playSound("https://assets.mixkit.co/sfx/preview/mixkit-fast-rocket-whoosh-1715.wav");
+    const dot = document.createElement("div");
+    dot.className = "dot";
+    screen.appendChild(dot);
 
-    setTimeout(() => screen.style.animation = "", 1000);
+    moveDot();
+
+    function moveDot() {
+        dot.style.left = Math.random() * (screen.clientWidth - 40) + "px";
+        dot.style.top = Math.random() * (screen.clientHeight - 40) + "px";
+    }
+
+    dot.onclick = () => {
+        moveDot();
+    };
 };
 
-/* ----------- TOGGLES ----------- */
+/* ----------- MEMORY GAME ----------- */
+document.getElementById("memoryGame").onclick = () => {
+    screen.innerHTML = "";
+    const tiles = [];
 
-const alarmToggle = document.getElementById("alarmToggle");
-alarmToggle.onclick = () => {
-    alarmToggle.classList.toggle("active");
+    let active = [];
 
-    if (alarmToggle.classList.contains("active")) {
-        screen.innerHTML = "🚨 ALARM ACTIVE 🚨";
-        screen.style.background = "rgba(255,0,0,0.2)";
-        playSound("https://assets.mixkit.co/sfx/preview/mixkit-classic-alarm-995.wav");
-    } else {
-        screen.innerHTML = "System Idle";
-        screen.style.background = "#000";
+    for (let i = 0; i < 9; i++) {
+        const t = document.createElement("div");
+        t.className = "tile";
+        screen.appendChild(t);
+        tiles.push(t);
+
+        t.onclick = () => {
+            if (active.includes(t)) return;
+
+            t.classList.add("active");
+            active.push(t);
+
+            if (active.length === 3) {
+                setTimeout(() => {
+                    tiles.forEach(tile => tile.classList.remove("active"));
+                    active = [];
+                }, 500);
+            }
+        };
     }
 };
 
-const gridToggle = document.getElementById("gridToggle");
-gridToggle.onclick = () => {
-    gridToggle.classList.toggle("active");
+/* ----------- DODGE THE BLOCKS ----------- */
+document.getElementById("dodgeGame").onclick = () => {
+    screen.innerHTML = "";
+    let score = 0;
 
-    if (gridToggle.classList.contains("active")) {
-        document.body.style.background =
-            "linear-gradient(#0ff 1px, transparent 1px), linear-gradient(90deg, #0ff 1px, transparent 1px)";
-        document.body.style.backgroundSize = "40px 40px";
-        playSound("https://assets.mixkit.co/sfx/preview/mixkit-tech-bling-2290.wav");
-    } else {
-        document.body.style.background = "#050510";
+    const player = document.createElement("div");
+    player.style.width = "40px";
+    player.style.height = "40px";
+    player.style.background = "#0ff";
+    player.style.position = "absolute";
+    player.style.bottom = "10px";
+    player.style.left = "130px";
+    screen.appendChild(player);
+
+    document.onmousemove = (e) => {
+        const rect = screen.getBoundingClientRect();
+        player.style.left = (e.clientX - rect.left - 20) + "px";
+    };
+
+    function spawnBlock() {
+        const b = document.createElement("div");
+        b.className = "block";
+        b.style.left = Math.random() * (screen.clientWidth - 40) + "px";
+        screen.appendChild(b);
+
+        let y = -40;
+        const fall = setInterval(() => {
+            y += 5;
+            b.style.top = y + "px";
+
+            if (y > screen.clientHeight) {
+                b.remove();
+                clearInterval(fall);
+                score++;
+            }
+
+            if (collision(player, b)) {
+                screen.innerHTML = `GAME OVER <br> Score: ${score}`;
+                clearInterval(fall);
+            }
+        }, 20);
     }
-};
 
-/* ----------- SLIDERS ----------- */
+    function collision(a, b) {
+        const A = a.getBoundingClientRect();
+        const B = b.getBoundingClientRect();
 
-document.getElementById("brightSlider").oninput = (e) => {
-    const v = e.target.value;
-    screen.style.opacity = v / 100 + 0.3;
-};
+        return !(
+            A.right < B.left ||
+            A.left > B.right ||
+            A.bottom < B.top ||
+            A.top > B.bottom
+        );
+    }
 
-document.getElementById("colorSlider").oninput = (e) => {
-    const hue = e.target.value;
-    screen.style.color = `hsl(${hue},100%,70%)`;
-    screen.style.textShadow = `0 0 10px hsl(${hue},100%,50%)`;
+    setInterval(spawnBlock, 700);
 };
 </script>
 
