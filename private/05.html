@@ -2,253 +2,129 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Tiny Game Hub</title>
+<title>Happy Birthday!</title>
 <style>
     body {
         margin: 0;
-        background: #050510;
-        color: #0ff;
-        font-family: 'Orbitron', sans-serif;
         height: 100vh;
+        background: linear-gradient(180deg, #ffddaa, #ff77aa);
         display: flex;
         justify-content: center;
         align-items: center;
-    }
-
-    #hub {
-        width: 90%;
-        max-width: 900px;
-        padding: 30px;
-        border: 2px solid #0ff;
-        border-radius: 20px;
-        background: rgba(0, 0, 20, 0.7);
-        box-shadow: 0 0 25px #0ff;
-    }
-
-    h1 {
-        text-align: center;
-        margin: 0;
-        color: #0ff;
-        text-shadow: 0 0 10px #0ff;
-    }
-
-    #games {
-        margin-top: 30px;
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 20px;
-    }
-
-    .game {
-        padding: 25px;
-        border: 1px solid #0ff;
-        border-radius: 15px;
-        text-align: center;
-        cursor: pointer;
-        background: rgba(0,255,255,0.1);
-        transition: .2s;
-        box-shadow: 0 0 10px #0ff;
-    }
-
-    .game:hover {
-        transform: scale(1.07);
-        box-shadow: 0 0 20px #0ff;
-    }
-
-    #screen {
-        margin-top: 25px;
-        height: 260px;
-        border: 2px solid #0ff;
-        border-radius: 10px;
-        background: #000;
-        text-align: center;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        font-size: 1.4rem;
-        position: relative;
+        flex-direction: column;
+        font-family: 'Comic Sans MS', sans-serif;
         overflow: hidden;
     }
 
-    .dot {
-        width: 40px;
-        height: 40px;
-        background: #0ff;
-        border-radius: 50%;
-        position: absolute;
+    h1 {
+        font-size: 4rem;
+        color: #fff;
+        text-shadow: 2px 2px #000;
+        margin: 20px;
+        text-align: center;
+    }
+
+    #cake {
+        position: relative;
+        width: 200px;
+        height: 200px;
+        margin: 20px;
         cursor: pointer;
     }
 
-    .block {
-        width: 40px;
-        height: 40px;
-        background: red;
+    .layer {
+        background: #ff9999;
+        width: 100%;
+        height: 60px;
+        border-radius: 15px;
+        margin-bottom: 10px;
+        position: relative;
+    }
+
+    .candle {
         position: absolute;
+        width: 15px;
+        height: 40px;
+        background: #ffeb3b;
+        border-radius: 5px;
         top: -40px;
     }
 
-    .tile {
-        width: 60px;
-        height: 60px;
-        background: #0ff4;
-        border: 1px solid #0ff;
-        display: inline-block;
-        margin: 6px;
-        cursor: pointer;
+    .flame {
+        width: 10px;
+        height: 15px;
+        background: orange;
+        border-radius: 50%;
+        position: absolute;
+        top: -15px;
+        left: 50%;
+        transform: translateX(-50%);
+        animation: flicker 0.3s infinite alternate;
     }
 
-    .tile.active {
-        background: #0ff;
+    @keyframes flicker {
+        0% { transform: translateX(-50%) scale(1); opacity: 1; }
+        100% { transform: translateX(-50%) scale(1.2); opacity: 0.7; }
+    }
+
+    .confetti {
+        position: absolute;
+        width: 10px;
+        height: 10px;
+        background: #fff;
+        opacity: 0.8;
+        transform: rotate(45deg);
+        animation: fall 3s linear infinite;
+    }
+
+    @keyframes fall {
+        0% { transform: translateY(-10px) rotate(0deg); }
+        100% { transform: translateY(100vh) rotate(360deg); }
     }
 </style>
 </head>
 <body>
 
-<div id="hub">
-    <h1>🎮 Tiny Game Hub</h1>
+<h1>🎂 Happy Birthday! 🎉</h1>
 
-    <div id="games">
-        <div class="game" id="reactionGame">⚡ Reaction Time</div>
-        <div class="game" id="catchGame">🟢 Catch the Dot</div>
-        <div class="game" id="memoryGame">🧠 Memory Tiles</div>
-        <div class="game" id="dodgeGame">⬇️ Dodge the Blocks</div>
-    </div>
-
-    <div id="screen">Select a game to begin</div>
+<div id="cake">
+    <div class="layer"></div>
+    <div class="layer"></div>
+    <div class="layer"></div>
 </div>
 
 <script>
-const screen = document.getElementById("screen");
+const cake = document.getElementById('cake');
 
-/* ----------- REACTION GAME ----------- */
-document.getElementById("reactionGame").onclick = () => {
-    screen.innerHTML = "Wait for green...";
-    screen.style.background = "#300";
+// Add 3 candles
+for(let i=0;i<3;i++){
+    const candle = document.createElement('div');
+    candle.className = 'candle';
+    candle.style.left = `${30 + i*60}px`;
 
-    const delay = Math.random() * 2000 + 1000;
+    const flame = document.createElement('div');
+    flame.className = 'flame';
 
-    let start;
+    candle.appendChild(flame);
+    cake.appendChild(candle);
+}
 
-    setTimeout(() => {
-        screen.innerHTML = "CLICK!";
-        screen.style.background = "#030";
-        start = performance.now();
+// Confetti generator
+function createConfetti(){
+    const confetti = document.createElement('div');
+    confetti.className = 'confetti';
+    confetti.style.left = Math.random() * window.innerWidth + 'px';
+    confetti.style.background = `hsl(${Math.random()*360}, 100%, 50%)`;
+    document.body.appendChild(confetti);
 
-        screen.onclick = () => {
-            const time = (performance.now() - start).toFixed(0);
-            screen.innerHTML = `Your time: ${time}ms`;
-            screen.style.background = "#000";
-            screen.onclick = null;
-        };
-    }, delay);
-};
+    setTimeout(() => confetti.remove(), 3000);
+}
 
-/* ----------- CATCH THE DOT ----------- */
-document.getElementById("catchGame").onclick = () => {
-    screen.innerHTML = "";
-    screen.style.background = "#000";
+setInterval(createConfetti, 200);
 
-    const dot = document.createElement("div");
-    dot.className = "dot";
-    screen.appendChild(dot);
-
-    moveDot();
-
-    function moveDot() {
-        dot.style.left = Math.random() * (screen.clientWidth - 40) + "px";
-        dot.style.top = Math.random() * (screen.clientHeight - 40) + "px";
-    }
-
-    dot.onclick = () => {
-        moveDot();
-    };
-};
-
-/* ----------- MEMORY GAME ----------- */
-document.getElementById("memoryGame").onclick = () => {
-    screen.innerHTML = "";
-    const tiles = [];
-
-    let active = [];
-
-    for (let i = 0; i < 9; i++) {
-        const t = document.createElement("div");
-        t.className = "tile";
-        screen.appendChild(t);
-        tiles.push(t);
-
-        t.onclick = () => {
-            if (active.includes(t)) return;
-
-            t.classList.add("active");
-            active.push(t);
-
-            if (active.length === 3) {
-                setTimeout(() => {
-                    tiles.forEach(tile => tile.classList.remove("active"));
-                    active = [];
-                }, 500);
-            }
-        };
-    }
-};
-
-/* ----------- DODGE THE BLOCKS ----------- */
-document.getElementById("dodgeGame").onclick = () => {
-    screen.innerHTML = "";
-    let score = 0;
-
-    const player = document.createElement("div");
-    player.style.width = "40px";
-    player.style.height = "40px";
-    player.style.background = "#0ff";
-    player.style.position = "absolute";
-    player.style.bottom = "10px";
-    player.style.left = "130px";
-    screen.appendChild(player);
-
-    document.onmousemove = (e) => {
-        const rect = screen.getBoundingClientRect();
-        player.style.left = (e.clientX - rect.left - 20) + "px";
-    };
-
-    function spawnBlock() {
-        const b = document.createElement("div");
-        b.className = "block";
-        b.style.left = Math.random() * (screen.clientWidth - 40) + "px";
-        screen.appendChild(b);
-
-        let y = -40;
-        const fall = setInterval(() => {
-            y += 5;
-            b.style.top = y + "px";
-
-            if (y > screen.clientHeight) {
-                b.remove();
-                clearInterval(fall);
-                score++;
-            }
-
-            if (collision(player, b)) {
-                screen.innerHTML = `GAME OVER <br> Score: ${score}`;
-                clearInterval(fall);
-            }
-        }, 20);
-    }
-
-    function collision(a, b) {
-        const A = a.getBoundingClientRect();
-        const B = b.getBoundingClientRect();
-
-        return !(
-            A.right < B.left ||
-            A.left > B.right ||
-            A.bottom < B.top ||
-            A.top > B.bottom
-        );
-    }
-
-    setInterval(spawnBlock, 700);
+// Candle click interaction
+cake.onclick = () => {
+    alert("Make a wish! 🕯️🎉");
 };
 </script>
 
