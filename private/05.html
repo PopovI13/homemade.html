@@ -1,80 +1,123 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<title>Zoom-In World</title>
+<meta charset="UTF-8">
+<title>Magic Button</title>
 <style>
     body {
         margin: 0;
-        overflow: hidden;
-        font-family: Arial, sans-serif;
-        background: black;
-    }
-
-    .layer {
-        position: absolute;
-        inset: 0;
+        height: 100vh;
         display: flex;
-        align-items: center;
         justify-content: center;
+        align-items: center;
+        background: #111;
         color: white;
-        font-size: 4rem;
-        font-weight: bold;
-        transition: transform 1s ease, opacity 1s ease;
-        cursor: pointer;
-        background-size: cover;
-        background-position: center;
+        font-family: Arial, sans-serif;
+        overflow: hidden;
     }
 
-    /* Backgrounds for each layer */
-    #galaxy { background-image: url('https://i.imgur.com/iFns4bf.jpeg'); }
-    #solar  { background-image: url('https://i.imgur.com/CO0DziB.jpeg'); }
-    #earth  { background-image: url('https://i.imgur.com/ZC9hXUV.jpeg'); }
-    #city   { background-image: url('https://i.imgur.com/X9W4oPR.jpg'); }
-    #room   { background-image: url('https://i.imgur.com/Xq4FktT.jpeg'); }
+    #magicBtn {
+        padding: 25px 60px;
+        font-size: 2rem;
+        border-radius: 15px;
+        background: linear-gradient(135deg, #ff00cc, #3333ff);
+        color: white;
+        border: none;
+        cursor: pointer;
+        transition: 0.2s;
+        box-shadow: 0 0 25px #ff00cc;
+    }
 
-    /* Hidden by default except first */
-    .hidden {
+    #magicBtn:hover {
+        transform: scale(1.1);
+        box-shadow: 0 0 35px #ff00cc;
+    }
+
+    #message {
+        position: absolute;
+        bottom: 40px;
+        font-size: 1.6rem;
         opacity: 0;
-        pointer-events: none;
-        transform: scale(2);
+        transition: opacity 0.4s;
+        text-align: center;
+        padding: 20px;
+    }
+
+    .sparkle {
+        position: absolute;
+        width: 10px;
+        height: 10px;
+        background: white;
+        border-radius: 50%;
+        animation: fly 1s linear forwards;
+    }
+
+    @keyframes fly {
+        to {
+            transform: translateY(-200px) translateX(50px) scale(0);
+            opacity: 0;
+        }
     }
 </style>
 </head>
 <body>
 
-<div class="layer" id="galaxy">Galaxy</div>
-<div class="layer hidden" id="solar">Solar System</div>
-<div class="layer hidden" id="earth">Earth</div>
-<div class="layer hidden" id="city">City</div>
-<div class="layer hidden" id="room">Room</div>
+<button id="magicBtn">✨ Magic Button ✨</button>
+<div id="message"></div>
 
 <script>
-    const layers = ["galaxy", "solar", "earth", "city", "room"];
-    let current = 0;
+const messages = [
+    "🔥 You unleashed fire power!",
+    "✨ Sparkles activated!",
+    "😺 Fun fact: Cats sleep 70% of their lives.",
+    "🎵 You triggered a secret sound!",
+    "🌈 A rainbow passed by!",
+    "💡 Random idea: Build something weird today.",
+    "🚀 You launched a tiny rocket!",
+    "😂 Joke: Why don’t skeletons fight? They don’t have the guts."
+];
 
-    function showLayer(index) {
-        layers.forEach((id, i) => {
-            const el = document.getElementById(id);
-            if (i === index) {
-                el.classList.remove("hidden");
-                el.style.transform = "scale(1)";
-            } else {
-                el.classList.add("hidden");
-            }
-        });
+const sounds = [
+    "https://assets.mixkit.co/sfx/preview/mixkit-fast-small-sweep-transition-166.wav",
+    "https://assets.mixkit.co/sfx/preview/mixkit-arcade-bonus-alert-767.wav",
+    "https://assets.mixkit.co/sfx/preview/mixkit-magical-coin-win-1938.wav"
+];
+
+function playRandomSound() {
+    const sound = new Audio(sounds[Math.floor(Math.random()*sounds.length)]);
+    sound.volume = 0.5;
+    sound.play();
+}
+
+function sparkleEffect(x, y) {
+    for (let i = 0; i < 15; i++) {
+        const s = document.createElement("div");
+        s.className = "sparkle";
+        s.style.left = x + (Math.random()*100 - 50) + "px";
+        s.style.top = y + (Math.random()*50 - 25) + "px";
+        document.body.appendChild(s);
+        setTimeout(() => s.remove(), 900);
     }
+}
 
-    layers.forEach((id, index) => {
-        document.getElementById(id).addEventListener("click", () => {
-            if (index < layers.length - 1) {
-                current++;
-                showLayer(current);
-            }
-        });
-    });
+document.getElementById("magicBtn").addEventListener("click", (e) => {
+    // Change background
+    document.body.style.background = `hsl(${Math.random()*360}, 70%, 20%)`;
+
+    // Random message
+    const msg = messages[Math.floor(Math.random()*messages.length)];
+    const messageBox = document.getElementById("message");
+    messageBox.innerHTML = msg;
+    messageBox.style.opacity = 1;
+    setTimeout(() => messageBox.style.opacity = 0, 2000);
+
+    // Sparkle effect near button
+    sparkleEffect(e.clientX, e.clientY);
+
+    // Random sound
+    playRandomSound();
+});
 </script>
 
 </body>
 </html>
-
