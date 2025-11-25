@@ -1,1 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Zoom-In World</title>
+<style>
+    body {
+        margin: 0;
+        overflow: hidden;
+        font-family: Arial, sans-serif;
+        background: black;
+    }
+
+    .layer {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 4rem;
+        font-weight: bold;
+        transition: transform 1s ease, opacity 1s ease;
+        cursor: pointer;
+        background-size: cover;
+        background-position: center;
+    }
+
+    /* Backgrounds for each layer */
+    #galaxy { background-image: url('https://i.imgur.com/iFns4bf.jpeg'); }
+    #solar  { background-image: url('https://i.imgur.com/CO0DziB.jpeg'); }
+    #earth  { background-image: url('https://i.imgur.com/ZC9hXUV.jpeg'); }
+    #city   { background-image: url('https://i.imgur.com/X9W4oPR.jpg'); }
+    #room   { background-image: url('https://i.imgur.com/Xq4FktT.jpeg'); }
+
+    /* Hidden by default except first */
+    .hidden {
+        opacity: 0;
+        pointer-events: none;
+        transform: scale(2);
+    }
+</style>
+</head>
+<body>
+
+<div class="layer" id="galaxy">Galaxy</div>
+<div class="layer hidden" id="solar">Solar System</div>
+<div class="layer hidden" id="earth">Earth</div>
+<div class="layer hidden" id="city">City</div>
+<div class="layer hidden" id="room">Room</div>
+
+<script>
+    const layers = ["galaxy", "solar", "earth", "city", "room"];
+    let current = 0;
+
+    function showLayer(index) {
+        layers.forEach((id, i) => {
+            const el = document.getElementById(id);
+            if (i === index) {
+                el.classList.remove("hidden");
+                el.style.transform = "scale(1)";
+            } else {
+                el.classList.add("hidden");
+            }
+        });
+    }
+
+    layers.forEach((id, index) => {
+        document.getElementById(id).addEventListener("click", () => {
+            if (index < layers.length - 1) {
+                current++;
+                showLayer(current);
+            }
+        });
+    });
+</script>
+
+</body>
+</html>
 
