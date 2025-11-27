@@ -4,129 +4,188 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Illia's Projects</title>
+
   <style>
+    /* ---------------- GLOBAL ---------------- */
     body {
-      font-family: Arial, sans-serif;
-      max-width: 700px;
-      margin: 40px auto;
-      padding: 0 20px;
-      background-color: #ffffff;
+      font-family: "Inter", Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      overflow: hidden; /* Background moves under panel */
+      background: #e9e9e9;
       color: #333;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    body.dark {
+      background: #111;
+      color: #eee;
+    }
+
+    /* ---------------- MOVING BACKGROUND ---------------- */
+    .bg-animation {
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+      z-index: 0;
+    }
+
+    .circle {
+      position: absolute;
+      border-radius: 50%;
+      opacity: 0.15;
+      animation: float 18s linear infinite;
+    }
+
+    @keyframes float {
+      from { transform: translateY(120vh) translateX(0); }
+      to   { transform: translateY(-20vh) translateX(40px); }
+    }
+
+    body.dark .circle {
+      opacity: 0.25;
+      background: rgba(255,255,255,0.2);
+    }
+
+    /* ---------------- PANEL ---------------- */
+    .container {
+      position: relative;
+      z-index: 10; /* on top of background */
+      width: 700px;
+      max-width: 90%;
+      padding: 40px;
+      border-radius: 16px;
+
+      background: rgba(255, 255, 255, 0.65);
+      backdrop-filter: blur(12px);
+      box-shadow: 0 8px 30px rgba(0,0,0,0.15);
       text-align: center;
+      animation: fadeUp 0.8s ease;
     }
 
+    body.dark .container {
+      background: rgba(40, 40, 40, 0.5);
+      box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+    }
+
+    /* ---------------- TITLE ---------------- */
     h1 {
-      margin-top: 40px;
-      color: #007acc;
+      font-size: 2.4em;
+      margin-bottom: 10px;
+      font-weight: 600;
     }
 
+    /* ---------------- NAV BUTTONS ---------------- */
     nav {
       display: flex;
       justify-content: center;
-      gap: 40px;
-      margin: 60px 0;
+      gap: 30px;
+      margin: 40px 0;
     }
 
     nav a {
       padding: 15px 30px;
       text-decoration: none;
-      background-color: #007acc;
+      background-color: #1f6feb;
       color: white;
-      border-radius: 8px;
-      font-weight: bold;
-      font-size: 1.2em;
-      transition: background-color 0.3s ease;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 1.1em;
+      transition: 0.25s ease;
     }
 
     nav a:hover {
-      background-color: #005fa3;
-    }
-
-    footer {
-      color: #666;
-      font-size: 0.9em;
-      margin-top: 80px;
-    }
-
-    /* Dark mode */
-    body.dark {
-      background-color: #222;
-      color: #eee;
+      transform: translateY(-4px);
+      background-color: #115ad4;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.12);
     }
 
     body.dark nav a {
-      background-color: #444;
-      color: #eee;
+      background-color: #3a3a3a;
     }
 
     body.dark nav a:hover {
-      background-color: #666;
+      background-color: #555;
     }
 
-    .theme-toggle {
-      margin: 40px 0 80px;
-    }
-
-    /* New styles for the toggle button */
+    /* ---------------- THEME BUTTON ---------------- */
     .theme-toggle button {
-      padding: 8px 20px;
-      font-size: 0.9em;
-      font-weight: bold;
+      padding: 10px 25px;
+      font-size: 1em;
+      border-radius: 10px;
       border: none;
-      border-radius: 6px;
       cursor: pointer;
-      background-color: #007acc;
+      background-color: #1f6feb;
       color: white;
-      box-shadow: 0 3px 6px rgba(0, 122, 204, 0.3);
-      transition: background-color 0.3s ease, box-shadow 0.3s ease;
+      font-weight: 600;
+      transition: 0.25s ease;
     }
 
     .theme-toggle button:hover {
-      background-color: #005fa3;
-      box-shadow: 0 4px 8px rgba(0, 95, 163, 0.4);
+      transform: translateY(-2px);
+      background-color: #115ad4;
     }
 
     body.dark .theme-toggle button {
       background-color: #444;
-      color: #eee;
-      box-shadow: 0 3px 6px rgba(68, 68, 68, 0.6);
     }
 
-    body.dark .theme-toggle button:hover {
-      background-color: #666;
-      box-shadow: 0 4px 8px rgba(102, 102, 102, 0.8);
+    /* ---------------- FOOTER ---------------- */
+    footer {
+      margin-top: 30px;
+      font-size: 0.9em;
+      opacity: 0.7;
     }
+
+    /* ---------------- ANIMATION ---------------- */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(15px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
   </style>
 </head>
+
 <body>
 
-  <h1>Illia's Projects</h1>
-  <p>Choose one of the categories below:</p>
-
-  <nav>
-    <a href="games.html">Games</a>
-    <a href="cool-projects.html">Cool Projects</a>
-  </nav>
-
-  <div class="theme-toggle">
-    <button id="themeToggleBtn" onclick="toggleTheme()">🌚 Dark Mode</button>
+  <!-- MOVING BACKGROUND PARTICLES -->
+  <div class="bg-animation">
+    <!-- You can add/remove circles or adjust sizes -->
+    <div class="circle" style="width:120px; height:120px; left:10%; background:#1f6feb; animation-delay:0s;"></div>
+    <div class="circle" style="width:80px; height:80px; left:40%; background:#007acc; animation-delay:-3s;"></div>
+    <div class="circle" style="width:140px; height:140px; left:70%; background:#3a86ff; animation-delay:-6s;"></div>
+    <div class="circle" style="width:100px; height:100px; left:85%; background:#4ea3ff; animation-delay:-9s;"></div>
   </div>
 
-  <footer>
-    &copy; 2025 Illia. All rights reserved.
-  </footer>
+  <!-- CONTENT PANEL -->
+  <div class="container">
+    <h1>Illia's Projects</h1>
+    <p>Choose one of the categories below:</p>
+
+    <nav>
+      <a href="games.html">Games</a>
+      <a href="cool-projects.html">Cool Projects</a>
+    </nav>
+
+    <div class="theme-toggle">
+      <button id="themeToggleBtn" onclick="toggleTheme()">🌚 Dark Mode</button>
+    </div>
+
+    <footer>&copy; 2025 Illia. All rights reserved.</footer>
+  </div>
 
   <script>
     function toggleTheme() {
       const body = document.body;
-      const btn = document.getElementById('themeToggleBtn');
-      body.classList.toggle('dark');
+      const btn = document.getElementById("themeToggleBtn");
+      body.classList.toggle("dark");
 
-      if (body.classList.contains('dark')) {
-        btn.textContent = '☀️ Light Mode';
-      } else {
-        btn.textContent = '🌚 Dark Mode';
-      }
+      btn.textContent = body.classList.contains("dark")
+        ? "☀️ Light Mode"
+        : "🌚 Dark Mode";
     }
   </script>
 
