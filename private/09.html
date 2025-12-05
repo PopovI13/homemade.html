@@ -33,7 +33,7 @@
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            z-index: 2;
+            z-index: 6; /* Fixed: Increased to 6 to sit above touch-controls (z-index 5) */
         }
 
         .hud-top {
@@ -44,6 +44,7 @@
             text-shadow: 0 0 10px #00ffff;
             font-size: 24px;
             font-weight: bold;
+            pointer-events: auto; /* Allow clicking pause btn */
         }
 
         .score-box span { color: #ff00ff; }
@@ -57,6 +58,7 @@
             display: flex;
             flex-direction: column;
             gap: 10px;
+            pointer-events: none;
         }
 
         .status-item {
@@ -72,7 +74,7 @@
         }
         .status-item.active { opacity: 1; }
 
-        #start-screen, #game-over-screen, #shop-screen, #garage-screen {
+        #login-screen, #start-screen, #game-over-screen, #shop-screen, #garage-screen, #pause-screen {
             position: absolute;
             top: 0;
             left: 0;
@@ -87,6 +89,10 @@
             backdrop-filter: blur(5px);
             z-index: 10;
         }
+
+        /* Ensure login screen is on top initially */
+        #login-screen { z-index: 20; }
+        #pause-screen { z-index: 15; }
 
         /* Shared Screen Content Styles */
         #shop-content, #garage-content {
@@ -247,6 +253,38 @@
             display: none !important;
         }
 
+        /* Inputs for Login */
+        #username-input {
+            background: rgba(0,0,0,0.5);
+            border: 2px solid #00ffff;
+            padding: 15px;
+            font-size: 24px;
+            color: #fff;
+            font-family: inherit;
+            text-align: center;
+            text-transform: uppercase;
+            outline: none;
+            margin-bottom: 20px;
+            width: 300px;
+        }
+
+        /* Pause Button */
+        #pause-btn {
+            background: transparent;
+            border: 2px solid #fff;
+            color: #fff;
+            font-size: 20px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: auto;
+        }
+        #pause-btn:hover { background: rgba(255,255,255,0.2); }
+
         /* Mobile controls overlay */
         #touch-controls {
             position: absolute;
@@ -270,7 +308,10 @@
     <div id="ui-layer">
         <div class="hud-top">
             <div class="score-box">CREDITS: <span id="score-display">0</span></div>
-            <div class="speed-box">SPD: <span id="speed-display">0</span> KM/H</div>
+            <div style="display: flex; gap: 20px; align-items: center;">
+                <div class="speed-box">SPD: <span id="speed-display">0</span> KM/H</div>
+                <button id="pause-btn">II</button>
+            </div>
         </div>
         <div id="powerup-status">
             <div id="shield-status" class="status-item" style="color: #0088ff">🔵 SHIELD ACTIVE</div>
@@ -280,12 +321,30 @@
         </div>
     </div>
 
-    <div id="start-screen">
+    <!-- LOGIN SCREEN -->
+    <div id="login-screen">
+        <h1>NEON ID</h1>
+        <p>IDENTIFY YOURSELF PILOT</p>
+        <input type="text" id="username-input" placeholder="ENTER NAME" maxlength="12">
+        <button class="btn" id="login-btn">CONNECT</button>
+    </div>
+
+    <!-- START SCREEN -->
+    <div id="start-screen" class="hidden">
         <h1>Neon Drift</h1>
+        <p>Welcome, <span id="player-name-display" style="color:#00ffff">PILOT</span></p>
         <p>Drive through the infinite cyber highway. Collect Power-ups!</p>
         <button class="btn" id="start-btn">IGNITE ENGINE</button>
         <button class="btn" id="main-garage-btn" style="background: #333; border: 1px solid #00ffff; font-size: 16px;">GARAGE</button>
+        <button class="btn" id="logout-btn" style="background: #333; border: 1px solid #ff0055; font-size: 14px; padding: 10px 20px;">LOGOUT</button>
         <div class="controls-hint">Desktop: Arrow Keys / A-D<br>Mobile: Tap Left/Right side</div>
+    </div>
+
+    <!-- PAUSE SCREEN -->
+    <div id="pause-screen" class="hidden">
+        <h1>PAUSED</h1>
+        <button class="btn" id="resume-btn">RESUME</button>
+        <button class="btn" id="quit-btn" style="background: #333;">QUIT RUN</button>
     </div>
 
     <div id="game-over-screen" class="hidden">
@@ -372,7 +431,8 @@
             UPGRADES: {
                 engine: { cost: 5000, value: 0.2, maxLevel: 5, name: "Engine Boost (Max Speed)" },
                 handling: { cost: 3000, value: 0.05, maxLevel: 5, name: "Handling (Turn Speed)" },
-                multiplier: { cost: 8000, value: 1, maxLevel: 5, name: "Credit Multiplier" }
+                multiplier: { cost: 8000, value: 1, maxLevel: 5, name: "Credit Multiplier" },
+                grip: { cost: 6000, value: 0.15, maxLevel: 5, name: "Lane Grip (High Speed Stability)" }
             }
         };
 
@@ -407,11 +467,13 @@
         let highScore = 0; 
         let gameSpeed = CONFIG.baseSpeed;
         let isGameRunning = false; 
+        let isPaused = false;
+        let currentUser = null;
 
         // Persistent Data
         let ownedSkins = ["default"];
         let activeSkin = "default";
-        let upgradeLevels = { engine: 0, handling: 0, multiplier: 0 };
+        let upgradeLevels = { engine: 0, handling: 0, multiplier: 0, grip: 0 };
         
         // Calculated Stats
         let currentMaxSpeed = CONFIG.maxSpeed;
@@ -437,14 +499,19 @@
         const highScoreEl = document.getElementById('high-score-display');
         const shopScoreEl = document.getElementById('shop-score-display');
         const garageCreditsEl = document.getElementById('garage-credits');
+        const playerNameDisplay = document.getElementById('player-name-display');
         
+        const loginScreen = document.getElementById('login-screen');
         const startScreen = document.getElementById('start-screen');
         const gameOverScreen = document.getElementById('game-over-screen');
         const shopScreen = document.getElementById('shop-screen');
         const garageScreen = document.getElementById('garage-screen');
+        const pauseScreen = document.getElementById('pause-screen');
+        
         const upgradesListEl = document.getElementById('upgrades-list');
         const skinsListEl = document.getElementById('skins-list');
         const container = document.getElementById('game-container');
+        const usernameInput = document.getElementById('username-input');
 
         // Powerup UI
         const shieldStatus = document.getElementById('shield-status');
@@ -452,30 +519,65 @@
         const turboStatus = document.getElementById('turbo-status');
         const ghostStatus = document.getElementById('ghost-status');
 
-        // --- PERSISTENCE ---
+        // --- PERSISTENCE (MULTI-USER) ---
+        function getStorageKey(key) {
+            return `neonDrift_${currentUser}_${key}`;
+        }
+
         function saveGameData() {
-            localStorage.setItem('neonDriftHighScore', highScore);
-            localStorage.setItem('neonDriftCredits', credits); 
-            localStorage.setItem('neonDriftUpgrades', JSON.stringify(upgradeLevels));
-            localStorage.setItem('neonDriftSkins', JSON.stringify(ownedSkins));
-            localStorage.setItem('neonDriftActiveSkin', activeSkin);
+            if(!currentUser) return;
+            localStorage.setItem(getStorageKey('highScore'), highScore);
+            localStorage.setItem(getStorageKey('credits'), credits); 
+            localStorage.setItem(getStorageKey('upgrades'), JSON.stringify(upgradeLevels));
+            localStorage.setItem(getStorageKey('skins'), JSON.stringify(ownedSkins));
+            localStorage.setItem(getStorageKey('activeSkin'), activeSkin);
         }
 
         function loadGameData() {
-            highScore = parseInt(localStorage.getItem('neonDriftHighScore')) || 0;
-            credits = parseInt(localStorage.getItem('neonDriftCredits')) || 0;
+            if(!currentUser) return;
+            highScore = parseInt(localStorage.getItem(getStorageKey('highScore'))) || 0;
+            credits = parseInt(localStorage.getItem(getStorageKey('credits'))) || 0;
             
-            const savedUpgrades = localStorage.getItem('neonDriftUpgrades');
-            if (savedUpgrades) upgradeLevels = JSON.parse(savedUpgrades);
+            const savedUpgrades = localStorage.getItem(getStorageKey('upgrades'));
+            // Defaults including new grip upgrade if not found in old save
+            if (savedUpgrades) {
+                const parsed = JSON.parse(savedUpgrades);
+                upgradeLevels = { engine: 0, handling: 0, multiplier: 0, grip: 0, ...parsed };
+            } else {
+                upgradeLevels = { engine: 0, handling: 0, multiplier: 0, grip: 0 };
+            }
 
-            const savedSkins = localStorage.getItem('neonDriftSkins');
+            const savedSkins = localStorage.getItem(getStorageKey('skins'));
             if (savedSkins) ownedSkins = JSON.parse(savedSkins);
+            else ownedSkins = ["default"];
 
-            const savedActiveSkin = localStorage.getItem('neonDriftActiveSkin');
+            const savedActiveSkin = localStorage.getItem(getStorageKey('activeSkin'));
             if (savedActiveSkin) activeSkin = savedActiveSkin;
+            else activeSkin = "default";
 
             scoreEl.innerText = Math.floor(credits);
             highScoreEl.innerText = highScore;
+            
+            applyUpgrades();
+            applyCarSkin();
+        }
+
+        function handleLogin() {
+            const name = usernameInput.value.trim();
+            if (name.length > 0) {
+                currentUser = name;
+                playerNameDisplay.innerText = currentUser.toUpperCase();
+                loadGameData();
+                loginScreen.classList.add('hidden');
+                startScreen.classList.remove('hidden');
+            }
+        }
+
+        function handleLogout() {
+            currentUser = null;
+            saveGameData(); // Just in case
+            usernameInput.value = '';
+            showScreen('login-screen');
         }
 
         // --- UPGRADE LOGIC ---
@@ -697,12 +799,8 @@
             
             setupTouch();
             setupButtons();
-
-            loadGameData();
-            applyUpgrades();
-            applyCarSkin();
-
-            gameLoop(performance.now());
+            
+            // Wait for user login
         }
 
         function createSun() {
@@ -899,6 +997,7 @@
         function startGame() {
             showScreen(null);
             isGameRunning = true;
+            isPaused = false;
             gameSpeed = CONFIG.baseSpeed;
             score = 0;
             pendingDistanceCredits = 0;
@@ -927,6 +1026,23 @@
             lastTime = performance.now();
         }
 
+        function togglePause() {
+            if(!isGameRunning) return;
+            isPaused = !isPaused;
+            if(isPaused) showScreen('pause-screen');
+            else {
+                showScreen(null);
+                lastTime = performance.now(); // Prevent huge delta jump
+            }
+        }
+
+        function quitGame() {
+            isPaused = false;
+            isGameRunning = false;
+            saveGameData();
+            showScreen('start-screen');
+        }
+
         function crash() {
             isGameRunning = false;
             if (score > highScore) highScore = Math.floor(score);
@@ -937,7 +1053,7 @@
         }
 
         function showScreen(screenId) {
-            [startScreen, gameOverScreen, shopScreen, garageScreen].forEach(s => s.classList.add('hidden'));
+            [loginScreen, startScreen, gameOverScreen, shopScreen, garageScreen, pauseScreen].forEach(s => s.classList.add('hidden'));
             if(screenId) document.getElementById(screenId).classList.remove('hidden');
         }
 
@@ -947,6 +1063,9 @@
 
         function gameLoop(time) {
             requestAnimationFrame(gameLoop);
+            
+            if (isPaused) return;
+
             const delta = (time - lastTime) / 1000; // Seconds
             lastTime = time;
 
@@ -975,12 +1094,22 @@
             }
             speedEl.innerText = Math.floor(effectiveSpeed * 100);
 
-            // Controls
+            // Controls with "Lane Grip" Upgrade Calculation
+            // Lane Grip increases handling responsiveness specifically at higher speeds
+            let effectiveTurnSpeed = currentTurnSpeed;
+            if (upgradeLevels.grip > 0 && gameSpeed > 1.0) {
+                // Grip bonus kicks in at speeds > 1.0
+                // Scaling bonus: 15% per level, scaled by how fast we are going
+                const speedFactor = (gameSpeed - 1.0) / (CONFIG.maxSpeed - 1.0); // 0 to 1 range approx
+                const bonus = (upgradeLevels.grip * CONFIG.UPGRADES.grip.value) * speedFactor;
+                effectiveTurnSpeed += bonus; 
+            }
+
             if (input.left) {
-                car.position.x -= currentTurnSpeed * (delta * 60);
+                car.position.x -= effectiveTurnSpeed * (delta * 60);
                 carMeshGroup.rotation.z = 0.1; carMeshGroup.rotation.y = 0.1; 
             } else if (input.right) {
-                car.position.x += currentTurnSpeed * (delta * 60);
+                car.position.x += effectiveTurnSpeed * (delta * 60);
                 carMeshGroup.rotation.z = -0.1; carMeshGroup.rotation.y = -0.1;
             } else {
                 carMeshGroup.rotation.z *= 0.9; carMeshGroup.rotation.y *= 0.9;
@@ -1125,6 +1254,7 @@
         function onKeyDown(e) {
             if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') input.left = true;
             if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') input.right = true;
+            if (e.key === 'Escape') togglePause();
         }
         function onKeyUp(e) {
             if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') input.left = false;
@@ -1142,17 +1272,29 @@
             bind(l, 'left'); bind(r, 'right');
         }
         function setupButtons() {
+            document.getElementById('login-btn').onclick = handleLogin;
+            document.getElementById('logout-btn').onclick = handleLogout;
+            
             document.getElementById('start-btn').onclick = startGame;
             document.getElementById('restart-btn').onclick = startGame;
             document.getElementById('shop-btn').onclick = () => { showScreen('shop-screen'); updateShopDisplay(); };
             document.getElementById('shop-close-btn').onclick = () => { if(isGameRunning) showScreen(null); else showScreen('game-over-screen'); };
+            
             const openGarage = () => { showScreen('garage-screen'); updateGarageDisplay(); };
             document.getElementById('main-garage-btn').onclick = openGarage;
             document.getElementById('garage-btn').onclick = openGarage;
             document.getElementById('garage-close-btn').onclick = () => { if (score > 0) showScreen('game-over-screen'); else showScreen('start-screen'); };
+
+            // Pause buttons
+            document.getElementById('pause-btn').onclick = togglePause;
+            document.getElementById('resume-btn').onclick = togglePause;
+            document.getElementById('quit-btn').onclick = quitGame;
         }
 
         init();
+        
+        // Initial animation start if needed, but init handles it.
+        gameLoop(performance.now());
     </script>
 </body>
 </html>
