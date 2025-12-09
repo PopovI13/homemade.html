@@ -1,30 +1,30 @@
-firebase.auth().signInAnonymously().then(user => {
-    window.userId = user.user.uid;
-    console.log("Logged in with ID:", window.userId);
-});
+<!-- Firebase scripts -->
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js"></script>
 
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyD9lQxE3J6x8RBtDY9yY-UcDxTk4QMDhXs",
+    authDomain: "game-neon-ride.firebaseapp.com",
+    projectId: "game-neon-ride",
+    storageBucket: "game-neon-ride.appspot.com",
+    messagingSenderId: "726334737714",
+    appId: "1:726334737714:web:3c902de47030acd829db2b",
+    measurementId: "G-LPTFWC1ZQ6"
+  };
 
-// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
+  // Initialize Firebase
+  const app = firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
 
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-  apiKey: "AIzaSyD9lQxE3J6x8RBtDY9yY-UcDxTk4QMDhXs",
-  authDomain: "game-neon-ride.firebaseapp.com",
-  projectId: "game-neon-ride",
-  storageBucket: "game-neon-ride.firebasestorage.app",
-  messagingSenderId: "726334737714",
-  appId: "1:726334737714:web:3c902de47030acd829db2b",
-  measurementId: "G-LPTFWC1ZQ6"
-};
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
+  // Anonymous login
+  auth.signInAnonymously().then(user => {
+      window.userId = user.user.uid;
+      console.log("Logged in with ID:", window.userId);
+  });
+</script>
 
 
 
