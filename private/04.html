@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Tron: Neon Legacy</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400..900&display=swap');
+        
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #050505;
+            font-family: 'Orbitron', sans-serif;
+            user-select: none;
+        }
+
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 2rem;
+            z-index: 10;
+        }
+
+        .neon-text {
+            color: #fff;
+            text-shadow: 0 0 10px #0ff, 0 0 20px #0ff;
+        }
+
+        .neon-box {
+            background: rgba(0, 0, 0, 0.9);
+            border: 2px solid #0ff;
+            box-shadow: 0 0 20px #0ff, inset 0 0 20px rgba(0, 255, 255, 0.2);
+            pointer-events: auto;
+        }
+
+        #game-over-screen {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            display: none;
+            padding: 3rem;
+            z-index: 20;
+            backdrop-filter: blur(5px);
+        }
+
+        .btn {
+            background: rgba(0, 255, 255, 0.1);
+            color: #0ff;
+            border: 1px solid #0ff;
+            padding: 12px 30px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 1.5rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        
+        .btn:hover {
+            background: #0ff;
+            color: #000;
+            box-shadow: 0 0 25px #0ff;
+        }
+
+        #score-board {
+            display: flex;
+            justify-content: space-between;
+            font-size: 1.5rem;
+            width: 400px;
+            margin: 0 auto;
+            background: rgba(0,0,0,0.5);
+            padding: 10px 20px;
+            border-radius: 20px;
+            border: 1px solid #333;
+        }
+
+        .p1-score { color: #00FFFF; text-shadow: 0 0 15px #00FFFF; }
+        .ai-score { color: #FF5500; text-shadow: 0 0 15px #FF5500; }
+
+        /* Turbo Meter */
+        #turbo-container {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 300px;
+            text-align: center;
+        }
+        .turbo-label {
+            color: #00FFFF;
+            font-size: 0.8rem;
+            margin-bottom: 5px;
+            letter-spacing: 2px;
+            text-shadow: 0 0 5px #00FFFF;
+        }
+        #turbo-bar-bg {
+            width: 100%;
+            height: 10px;
+            background: #111;
+            border: 1px solid #333;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        #turbo-bar-fill {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, #0088ff, #00FFFF);
+            box-shadow: 0 0 10px #00FFFF;
+            transition: width 0.1s linear;
+        }
+
+        #controls-hint {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            text-align: right;
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.5);
+        }
+        .key {
+            color: #fff;
+            border: 1px solid #555;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin: 0 2px;
+        }
+    </style>
+    <!-- Import Map to resolve bare module specifiers -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.module.js",
+                "three/examples/jsm/": "https://cdn.jsdelivr.net/npm/three@0.128.0/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+<body>
+
+    <!-- UI Overlay -->
+    <div id="ui-layer">
+        <div class="w-full text-center mt-4">
+            <h1 class="text-5xl font-black neon-text mb-2 italic tracking-tighter">TRON: NEON</h1>
+            <div id="score-board">
+                <span class="p1-score">P1: <span id="p1-score-val">0</span></span>
+                <span class="text-gray-600">|</span>
+                <span class="ai-score">CPU: <span id="ai-score-val">0</span></span>
+            </div>
+        </div>
+
+        <div id="turbo-container">
+            <div class="turbo-label">TURBO BOOST</div>
+            <div id="turbo-bar-bg">
+                <div id="turbo-bar-fill"></div>
+            </div>
+        </div>
+
+        <div id="controls-hint">
+            <p class="mb-1">Arena View: <span class="key">WASD</span> for Absolute Direction</p>
+            <p class="mb-1">Chase View: <span class="key">A/D</span> for Relative Turn</p>
+            <p class="mb-1"><span class="key">SHIFT</span> for Turbo</p>
+            <p><span class="key">C</span> Switch Camera</p>
+        </div>
+    </div>
+
+    <!-- Game Over / Start Screen -->
+    <div id="game-over-screen" class="neon-box rounded-xl">
+        <h2 id="end-title" class="text-5xl font-bold mb-4 text-white">SYSTEM READY</h2>
+        <p id="end-reason" class="text-cyan-200 mb-8 uppercase tracking-widest text-sm">Initiate Light Cycle Sequence</p>
+        <button class="btn" onclick="startGame()">ENTER GRID</button>
+    </div>
+
+    <!-- 3D Container -->
+    <div id="canvas-container"></div>
+
+    <!-- Main Game Script -->
+    <script type="module">
+        import * as THREE from 'three';
+        import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
+        import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
+
+        // --- Constants ---
+        const BOARD_SIZE = 60;
+        const CELL_SIZE = 2;
+        const BASE_MOVE_DELAY = 0.08; // Seconds between moves (Normal speed)
+        const TURBO_MOVE_DELAY = 0.04; // Seconds between moves (Turbo speed)
+        const TURBO_DRAIN = 1.5; // Energy drained per tick
+        const TURBO_REGEN = 0.2; // Energy regen per frame
+
+        // --- State ---
+        let scene, camera, renderer, composer;
+        let p1, ai;
+        let wallsGroup;
+        let occupiedCells = new Set();
+        let isGameRunning = false;
+        let scores = { p1: 0, ai: 0 };
+        let clock = new THREE.Clock();
+        
+        let cameraMode = 'arena'; // 'arena' or 'chase'
+
+        // --- Setup ---
+
+        function init() {
+            // Scene
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x020202);
+            scene.fog = new THREE.FogExp2(0x020202, 0.012);
+
+            // Camera
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+            updateCameraPosition();
+
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            // Tone mapping for bloom
+            renderer.toneMapping = THREE.ReinhardToneMapping;
+            document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+            // Post-Processing (Bloom)
+            const renderScene = new RenderPass(scene, camera);
+            
+            // Resolution, Strength, Radius, Threshold
+            const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+            bloomPass.threshold = 0.1;
+            bloomPass.strength = 1.2; // Intensity of glow
+            bloomPass.radius = 0.5;
+
+            composer = new EffectComposer(renderer);
+            composer.addPass(renderScene);
+            composer.addPass(bloomPass);
+
+            // Objects
+            createEnvironment();
+            
+            // Events
+            window.addEventListener('resize', onWindowResize);
+            window.addEventListener('keydown', handleKeyDown);
+            window.addEventListener('keyup', handleKeyUp);
+
+            // Global access for UI button
+            window.startGame = startGame;
+
+            showMenu("SYSTEM READY", "Prepare for Grid Entry");
+            animate();
+        }
+
+        function createEnvironment() {
+            // Floor Grid
+            const gridHelper = new THREE.GridHelper(BOARD_SIZE * CELL_SIZE, BOARD_SIZE, 0x00FFFF, 0x111111);
+            gridHelper.position.y = 0;
+            scene.add(gridHelper);
+
+            // Floor Plane (Reflective-ish dark surface)
+            const planeGeo = new THREE.PlaneGeometry(2000, 2000);
+            const planeMat = new THREE.MeshBasicMaterial({ color: 0x050505 });
+            const plane = new THREE.Mesh(planeGeo, planeMat);
+            plane.rotation.x = -Math.PI / 2;
+            plane.position.y = -0.1;
+            scene.add(plane);
+
+            // Lighting
+            const ambLight = new THREE.AmbientLight(0xffffff, 0.2);
+            scene.add(ambLight);
+            
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.5);
+            dirLight.position.set(20, 50, 20);
+            scene.add(dirLight);
+
+            wallsGroup = new THREE.Group();
+            scene.add(wallsGroup);
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            composer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function updateCameraPosition() {
+            if (cameraMode === 'arena') {
+                // High angle, looking down
+                camera.position.set(0, 65, 45);
+                camera.lookAt(0, 0, 0);
+            }
+        }
+
+        // --- Game Classes ---
+
+        class LightCycle {
+            constructor(x, z, dx, dz, color, isAI) {
+                this.x = x;
+                this.z = z;
+                this.dx = dx;
+                this.dz = dz;
+                this.color = color;
+                this.isAI = isAI;
+                
+                this.nextDir = { dx, dz };
+                this.alive = true;
+                
+                this.mesh = null;
+                this.trailMesh = null;
+                
+                this.turboEnergy = 100;
+                this.isTurbo = false;
+                this.moveTimer = 0;
+
+                this.initMesh();
+            }
+
+            initMesh() {
+                // Bike Body (Sleek Box)
+                const geometry = new THREE.BoxGeometry(CELL_SIZE * 0.9, CELL_SIZE * 0.8, CELL_SIZE * 1.5);
+                const material = new THREE.MeshStandardMaterial({ 
+                    color: 0x111111,
+                    emissive: this.color,
+                    emissiveIntensity: 0.8,
+                    roughness: 0.2,
+                    metalness: 0.9
+                });
+                this.mesh = new THREE.Mesh(geometry, material);
+                
+                // Add an engine light
+                const light = new THREE.PointLight(this.color, 2, 20);
+                light.position.set(0, 1, 0);
+                this.mesh.add(light);
+
+                this.updateVis(0); // initial pos
+                scene.add(this.mesh);
+            }
+
+            updateVis(dt) {
+                // Lerp visual position for smoothness could be added here, 
+                // but for grid precision we snap to grid visually or lerp carefully.
+                // For this version, we snap to grid logic, but could slide the mesh.
+                // Simple snap:
+                this.mesh.position.set(this.x * CELL_SIZE, CELL_SIZE/2, this.z * CELL_SIZE);
+                
+                // Rotate mesh based on direction
+                const angle = Math.atan2(this.dx, this.dz);
+                this.mesh.rotation.y = angle;
+            }
+
+            turn(dx, dz) {
+                if (this.dx === -dx && this.dz === -dz) return; // No 180s
+                this.nextDir = { dx, dz };
+            }
+
+            update(dt) {
+                if (!this.alive) return;
+
+                // Handle Turbo Energy
+                if (this.isTurbo && this.turboEnergy > 0) {
+                    this.turboEnergy -= TURBO_DRAIN;
+                    if (this.turboEnergy <= 0) this.isTurbo = false;
+                } else if (!this.isTurbo && this.turboEnergy < 100) {
+                    this.turboEnergy += TURBO_REGEN;
+                }
+
+                const currentDelay = this.isTurbo ? TURBO_MOVE_DELAY : BASE_MOVE_DELAY;
+
+                this.moveTimer += dt;
+                
+                if (this.moveTimer >= currentDelay) {
+                    this.moveTimer = 0;
+                    this.step();
+                }
+            }
+
+            step() {
+                // Leave Wall
+                createWall(this.x, this.z, this.color);
+                occupiedCells.add(`${this.x},${this.z}`);
+
+                // Update Dir
+                this.dx = this.nextDir.dx;
+                this.dz = this.nextDir.dz;
+
+                // Move
+                this.x += this.dx;
+                this.z += this.dz;
+
+                this.updateVis();
+                
+                // Collision
+                if (this.checkCollision()) {
+                    this.die();
+                }
+            }
+
+            checkCollision() {
+                const half = BOARD_SIZE / 2;
+                // Boundary
+                if (this.x < -half || this.x > half || this.z < -half || this.z > half) return true;
+                // Walls
+                if (occupiedCells.has(`${this.x},${this.z}`)) return true;
+                return false;
+            }
+
+            die() {
+                this.alive = false;
+                this.mesh.visible = false;
+                createExplosion(this.mesh.position, this.color);
+            }
+        }
+
+        // --- Helper Functions ---
+
+        function createWall(x, z, color) {
+            const h = CELL_SIZE * 0.8;
+            const geo = new THREE.BoxGeometry(CELL_SIZE, h, CELL_SIZE);
+            geo.translate(0, h/2, 0);
+            
+            const mat = new THREE.MeshStandardMaterial({ 
+                color: color, 
+                emissive: color, 
+                emissiveIntensity: 1.5, // High intensity for bloom
+                transparent: true,
+                opacity: 0.9
+            });
+            const wall = new THREE.Mesh(geo, mat);
+            wall.position.set(x * CELL_SIZE, 0, z * CELL_SIZE);
+            wallsGroup.add(wall);
+        }
+
+        function createExplosion(pos, color) {
+            const count = 30;
+            const geo = new THREE.BoxGeometry(0.4, 0.4, 0.4);
+            const mat = new THREE.MeshBasicMaterial({ color: color });
+            
+            for(let i=0; i<count; i++) {
+                const p = new THREE.Mesh(geo, mat);
+                p.position.copy(pos);
+                // Random velocity
+                p.userData.vel = new THREE.Vector3(
+                    (Math.random()-0.5)*10, 
+                    Math.random()*10, 
+                    (Math.random()-0.5)*10
+                );
+                scene.add(p);
+                
+                // Animate out
+                const anim = () => {
+                    p.position.add(p.userData.vel.clone().multiplyScalar(0.05));
+                    p.scale.multiplyScalar(0.9);
+                    if(p.scale.x < 0.1) scene.remove(p);
+                    else requestAnimationFrame(anim);
+                };
+                anim();
+            }
+        }
+
+        // --- AI ---
+
+        function updateAI(dt) {
+            if (!ai.alive) return;
+
+            // Simple "Raycast" logic
+            const head = { x: ai.x, z: ai.z };
+            
+            // Should I turbo? (If far behind or straight away)
+            // AI occasionally boosts if safe
+            if (ai.turboEnergy > 50 && Math.random() < 0.01) {
+                ai.isTurbo = true;
+                setTimeout(() => ai.isTurbo = false, 1000);
+            }
+
+            const forward = { x: head.x + ai.dx, z: head.z + ai.dz };
+            const left = { x: head.x + ai.dz, z: head.z - ai.dx };
+            const right = { x: head.x - ai.dz, z: head.z + ai.dx };
+
+            const isBlocked = (pos) => {
+                const half = BOARD_SIZE/2;
+                if (pos.x < -half || pos.x > half || pos.z < -half || pos.z > half) return true;
+                return occupiedCells.has(`${pos.x},${pos.z}`);
+            };
+
+            // If forward blocked, turn
+            if (isBlocked(forward)) {
+                if (!isBlocked(left) && !isBlocked(right)) {
+                     // Turn towards center of map ideally, or random
+                     if (Math.abs(head.x) > Math.abs(head.z)) {
+                         // More X, try to reduce X
+                         // Crude logic, just random for now is fun enough
+                         Math.random() > 0.5 ? ai.turn(ai.dz, -ai.dx) : ai.turn(-ai.dz, ai.dx);
+                     } else {
+                         Math.random() > 0.5 ? ai.turn(ai.dz, -ai.dx) : ai.turn(-ai.dz, ai.dx);
+                     }
+                } else if (!isBlocked(left)) {
+                    ai.turn(ai.dz, -ai.dx);
+                } else if (!isBlocked(right)) {
+                    ai.turn(-ai.dz, ai.dx);
+                }
+            } else {
+                // Forward is safe. Maybe turn randomly to trap player?
+                // 2% chance to turn if open
+                if (Math.random() < 0.02) {
+                     if (Math.random() > 0.5 && !isBlocked(left)) ai.turn(ai.dz, -ai.dx);
+                     else if (!isBlocked(right)) ai.turn(-ai.dz, ai.dx);
+                }
+            }
+            
+            ai.update(dt);
+        }
+
+        // --- Game Control ---
+
+        function startGame() {
+            if (isGameRunning) return;
+            isGameRunning = true;
+            document.getElementById('game-over-screen').style.display = 'none';
+            
+            // Reset Grid
+            occupiedCells.clear();
+            while(wallsGroup.children.length) wallsGroup.remove(wallsGroup.children[0]);
+            if (p1) scene.remove(p1.mesh);
+            if (ai) scene.remove(ai.mesh);
+
+            // Spawn
+            // P1 Cyan, AI Orange
+            p1 = new LightCycle(-10, 0, 1, 0, 0x00FFFF, false);
+            ai = new LightCycle(10, 0, -1, 0, 0xFF5500, true);
+
+            clock.start();
+        }
+
+        function showMenu(title, sub) {
+            const m = document.getElementById('game-over-screen');
+            m.style.display = 'block';
+            document.getElementById('end-title').innerText = title;
+            document.getElementById('end-reason').innerText = sub;
+        }
+
+        function endGame(res) {
+            isGameRunning = false;
+            
+            if (res === 'win') {
+                scores.p1++;
+                showMenu("VICTORY", "Program De-Resolution Complete");
+            } else if (res === 'loss') {
+                scores.ai++;
+                showMenu("DEREZZED", "System Failure");
+            } else {
+                showMenu("STALEMATE", "Mutual Destruction");
+            }
+
+            document.getElementById('p1-score-val').innerText = scores.p1;
+            document.getElementById('ai-score-val').innerText = scores.ai;
+        }
+
+        // --- Input ---
+
+        function handleKeyDown(e) {
+            if (e.repeat) return;
+            if (!isGameRunning) {
+                if (e.code === 'Space') startGame();
+                return;
+            }
+
+            const { dx, dz } = p1;
+            let nextDx = 0;
+            let nextDz = 0;
+            const isChaseMode = cameraMode === 'chase';
+
+            switch(e.code) {
+                case 'KeyC': toggleCamera(); return;
+                case 'ShiftLeft': 
+                case 'ShiftRight': p1.isTurbo = true; return;
+                
+                // --- Turning Logic ---
+
+                case 'KeyA': case 'ArrowLeft':
+                    if (isChaseMode) {
+                        // Relative Left Turn: new (dx, dz) is perpendicular left of current (dx, dz)
+                        // Current direction (dx, dz). Left turn is (dz, -dx)
+                        nextDx = dz;
+                        nextDz = -dx;
+                    } else {
+                        // Absolute Left (West): (-1, 0)
+                        nextDx = -1;
+                        nextDz = 0;
+                    }
+                    break;
+                case 'KeyD': case 'ArrowRight':
+                    if (isChaseMode) {
+                        // Relative Right Turn: new (dx, dz) is perpendicular right of current (dx, dz)
+                        // Current direction (dx, dz). Right turn is (-dz, dx)
+                        nextDx = -dz;
+                        nextDz = dx;
+                    } else {
+                        // Absolute Right (East): (1, 0)
+                        nextDx = 1;
+                        nextDz = 0;
+                    }
+                    break;
+
+                case 'KeyW': case 'ArrowUp':
+                    // Only allow W/Up/S/Down for turning in the default (arena) mode (absolute turns)
+                    if (!isChaseMode) {
+                        if (e.code === 'KeyW' || e.code === 'ArrowUp') { nextDx = 0; nextDz = -1; }
+                    }
+                    break;
+                case 'KeyS': case 'ArrowDown':
+                    if (!isChaseMode) {
+                        if (e.code === 'KeyS' || e.code === 'ArrowDown') { nextDx = 0; nextDz = 1; }
+                    }
+                    break;
+            }
+            
+            // Only apply turn if a valid turn was selected
+            if (nextDx !== 0 || nextDz !== 0) {
+                p1.turn(nextDx, nextDz);
+            }
+        }
+
+        function handleKeyUp(e) {
+            if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') {
+                if (p1) p1.isTurbo = false;
+            }
+        }
+
+        function toggleCamera() {
+            cameraMode = cameraMode === 'arena' ? 'chase' : 'arena';
+        }
+
+        // --- Loop ---
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const dt = Math.min(clock.getDelta(), 0.1); // Cap dt
+
+            if (isGameRunning) {
+                p1.update(dt);
+                updateAI(dt);
+
+                // UI Update
+                const bar = document.getElementById('turbo-bar-fill');
+                // Ensure p1 exists before accessing its properties
+                if (p1 && bar) {
+                    bar.style.width = Math.max(0, p1.turboEnergy) + '%';
+                }
+
+                // Check End
+                if (!p1.alive && !ai.alive) endGame('draw');
+                else if (!p1.alive) endGame('loss');
+                else if (!ai.alive) endGame('win');
+
+                // Camera Logic
+                if (cameraMode === 'chase' && p1.alive) {
+                    const offset = new THREE.Vector3(p1.dx, 0.5, p1.dz).multiplyScalar(-10); // Behind
+                    const height = new THREE.Vector3(0, 8, 0); // Up
+                    const targetPos = p1.mesh.position.clone().add(offset).add(height);
+                    
+                    camera.position.lerp(targetPos, 0.1);
+                    camera.lookAt(p1.mesh.position.clone().add(new THREE.Vector3(p1.dx, 0, p1.dz).multiplyScalar(10)));
+                } else if (cameraMode === 'arena') {
+                     const target = new THREE.Vector3(0, 65, 45);
+                     camera.position.lerp(target, 0.05);
+                     camera.lookAt(0,0,0);
+                }
+            }
+
+            composer.render();
+        }
+
+        init();
+    </script>
+</body>
+</html>
